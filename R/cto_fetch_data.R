@@ -6,9 +6,8 @@
 #' encrypted forms via a private key and offers an automated "tidy" mode that
 #' cleans column types based on the XLSForm definition.
 #'
-#' @param req A `httr2_request` object initialized via
-#' \code{\link{cto_request}()}.
-#' @param form_id A character string specifying the unique ID of the form.
+#' @param req A `httr2_request` object initialized via \code{\link{cto_request}()}.
+#' @param form_id String. The unique ID of the SurveyCTO form.
 #' @param private_key An optional path to a `.pem` private key file. Required
 #'   if the form is encrypted.
 #' @param start_date A `POSIXct` object. Only submissions received after
@@ -20,7 +19,7 @@
 #'   (numeric, date, datetime), order variables and removes structural fields (groups/notes).
 #'
 #' @returns A `data.frame`. If `tidy = FALSE`, returns the raw data obtained from
-#' returned JSON object. If `tidy = TRUE`, returns a cleaned dataset with optimized types
+#' returned JSON object. If `tidy = TRUE`, returns a cleaned data with optimized types
 #' and column ordering.
 #'
 #' @details
@@ -41,7 +40,6 @@
 #'
 #' @export
 #'
-#' @importFrom rlang .data
 #'
 #' @examples
 #' \dontrun{
@@ -49,17 +47,12 @@
 #' req <- cto_request("my_server", "user", "pass")
 #'
 #' # Download raw data
-#' raw <- cto_get_data(req, "my_form_id")
+#' raw <- cto_fetch_data(req, "my_form_id")
 #'
 #' # Download and tidy encrypted data
-#' clean <- cto_get_data(
-#'   req,
-#'   "my_form_id",
-#'   private_key = "keys/my_key.pem",
-#'   tidy = TRUE
-#' )
+#' clean <- cto_fetch_data(req, "my_form_id", "keys/my_key.pem")
 #' }
-cto_get_data <- function(
+cto_fetch_data <- function(
     req,
     form_id,
     private_key = NULL,
@@ -69,44 +62,47 @@ cto_get_data <- function(
     ) {
 
   verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
-  if (verbose) cli::cli_progress_step("Preparing to download...", spinner = TRUE)
 
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  if (!is.null(start_date)) checkmate::assert_class(start_date, "POSIXct")
-  checkmate::assert_character(status, min.len = 1, max.len = 3)
-  if (!is.null(private_key)) checkmate::assert_file(private_key, access = "r")
-  checkmate::assert_flag(tidy)
+  assert_class(req, c("httr2_request", "scto_request"))
+  if (!is.null(start_date)) assert_class(start_date, "POSIXct")
+  assert_character(status, min.len = 1, max.len = 3)
+  if (!is.null(private_key)) checkmate::assert_file(private_key, "r", "pem")
+  assert_flag(tidy)
+
+  if (verbose) cli_progress_step("Preparing data download...")
 
   status <- match.arg(status, several.ok = TRUE)
   start_date <- as.numeric(start_date)
 
-  url_path <- glue("api/v2/forms/data/wide/json/{form_id}?date={start_date}")
+  url_path <- str_glue("api/v2/forms/data/wide/json/{form_id}?date={start_date}")
 
   req_data <- req |>
-    cto_url_path_append(url_path) |>
-    cto_url_query(r = status, .multi = "pipe")
+    req_url_path_append(url_path) |>
+    req_url_query(r = status, .multi = "pipe")
 
   if (!is.null(private_key)) {
     req_data <- httr2::req_body_multipart(req_data, private_key = curl::form_file(private_key))
   }
 
-  if (verbose) cli::cli_progress_step("Downloading the data...", spinner = TRUE)
+  if (verbose) cli_progress_step("Downloading data...")
 
-  raw_data <- cto_perform(req_data) |>
-    cto_body_json(simplifyVector = TRUE, flatten = TRUE)
+  raw_data <- req_perform(req_data) |>
+    resp_body_json(simplifyVector = TRUE, flatten = TRUE)
 
-  if (verbose) cli::cli_progress_done("Downloading complete!")
+  if (verbose) cli_progress_step("Downloading complete!")
+
+  if (length(raw_data) == 0) return(data.frame())
 
   if (!tidy) return(raw_data)
 
-  if (verbose) cli::cli_progress_step("Tidying the data...", spinner = TRUE)
+  if (verbose) cli_progress_step("Tidying data...")
 
-  form <- cto_get_form_definitions(req, form_id)
+  form <- cto_form_definitions(req, form_id)
 
   survey <- form$survey |>
-    dplyr::mutate(
-      type = stringr::str_squish(.data$type),
-      name = stringr::str_squish(.data$name),
+    mutate(
+      type = str_squish(.data$type),
+      name = str_squish(.data$name),
       repeat_level = purrr::accumulate(
         .data$type,
         .init = 0,
@@ -125,15 +121,18 @@ cto_get_data <- function(
       is_slt_multi   = grepl("^select_multiple", .data$type, TRUE),
       is_date        = grepl("^date|^today", .data$type, TRUE),
       is_datetime    = grepl("^datetime|^start|^end$", .data$type, TRUE),
-      is_null_fields = grepl("^note|^begin group|^end group|^begin repeat|^end repeat", .data$type, TRUE),
+      is_null_fields = grepl("^note|^begin group|^end group|^end repeat", .data$type, TRUE),
       is_media       = grepl("^image$|^audio$|^video$|^file|^text audit|^audio audit", .data$type, TRUE),
       regex_varname  = purrr::pmap_chr(
         list(.data$name, .data$repeat_level, .data$is_slt_multi),
         \(n, r, m) gen_regex_varname(n, r, m)
       ),
-      regex_varname  = ifelse(grepl("^begin repeat", .data$type, TRUE),
-                              paste0("^", .data$regex_varname, "_count", "$"),
-                              .data$regex_varname)
+      regex_varname = ifelse(
+        grepl("^begin repeat", .data$type, TRUE),
+        stringr::str_replace(.data$regex_varname, r"(\[0-9\]\+\$)", "count"),
+        .data$regex_varname
+        )
+
     )
 
   cs_dates <- c("CompletionDate", "SubmissionDate")
@@ -145,24 +144,33 @@ cto_get_data <- function(
   datetime_fields <- c(cs_dates, survey$regex_varname[survey$is_datetime])
   media_fields <- survey$regex_varname[survey$is_media]
 
-  tidy_data <- raw_data |>
-    dplyr::select(
-      !dplyr::matches(null_fields)
-    ) |>
-    dplyr::select(
-      dplyr::any_of(cs_dates),
-      dplyr::matches(all_fields),
-      dplyr::everything()
-    ) |>
-    dplyr::mutate(
-      dplyr::across(dplyr::matches(numeric_fields), as.numeric),
-      dplyr::across(dplyr::matches(date_fields), ~as.Date(.x, format = "%B %d, %Y")),
-      dplyr::across(dplyr::matches(datetime_fields), ~as.POSIXct(.x, format = "%B %d, %Y %I:%M:%S %p")),
-      dplyr::across(dplyr::matches(media_fields), ~ifelse(grepl("^https", .x, TRUE), basename(.x), .x))
+  tidy_data <- select(raw_data, any_of(cs_dates), matches(all_fields), everything())
+
+  if (length(null_fields) > 0) tidy_data <- select(tidy_data, !matches(null_fields))
+  tidy_data <- mutate(tidy_data, across(
+    matches(datetime_fields), ~ as.POSIXct(.x, format = "%B %d, %Y %I:%M:%S %p")
+  ))
+
+  if (length(numeric_fields) > 0) {
+    tidy_data <- mutate(
+      tidy_data, across(matches(numeric_fields), as.numeric)
     )
-  # Handle geopoints here
-  if (verbose) cli::cli_progress_done("Tidying complete!")
-  tidy_data
+  }
+
+  if (length(date_fields) > 0) {
+    tidy_data <- mutate(
+      tidy_data, across(matches(date_fields), ~ as.Date(.x, format = "%B %d, %Y"))
+    )
+  }
+
+  if (length(media_fields) > 0) {
+    tidy_data <- mutate(
+      tidy_data, across(matches(media_fields), ~ ifelse(grepl("^https", .x, TRUE), basename(.x), .x))
+    )
+  }
+
+  if (verbose) cli_progress_step("Tidying complete!")
+  return(tidy_data)
 }
 
 

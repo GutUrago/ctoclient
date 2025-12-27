@@ -4,59 +4,41 @@
 \alias{cto_request}
 \title{Create an Authenticated SurveyCTO Request Object}
 \usage{
-cto_request(
-  servername = NULL,
-  username = NULL,
-  password = NULL,
-  read_lines = NULL
-)
+cto_request(server, username, password = NULL)
 }
 \arguments{
-\item{servername}{String. The name of your SurveyCTO server (the subdomain).
+\item{server}{String. The name of your SurveyCTO server (the subdomain).
 For example, if your URL is \code{https://example.surveycto.com},
 use \code{"example"}.}
 
-\item{username}{String. The username/email for a user account with API access.}
+\item{username}{String. The username/email for a user account.}
 
-\item{password}{String. The password for the specified user.}
-
-\item{read_lines}{Path to a local text file and checked only if any of
-the \code{servername}, \code{username}, and \code{password} arguments are missing.
-It uses \code{\link[base]{readLines}()} to read the lines. The file must
-contain exactly three lines:
-\enumerate{
-\item The server name (e.g., "my-organization")
-\item The username (email address)
-\item The password
-}}
+\item{password}{String. The password for the specified user. You should avoid
+entering the password directly when calling this function, as it will be
+captured by \code{.Rhistory}. Instead, leave it unset (\code{NULL}) and the default behavior
+will prompt you for it interactively. If needed for automation purposes,
+it's recommended to always use the environmental variables.}
 }
 \value{
 A \code{httr2_request} object prepared with the base URL and
 authentication headers.
 }
 \description{
-\code{cto_request()} initializes a base \code{httr2} request object with the necessary
-server URL and Basic Authentication credentials. This object can then be
-extended with specific API endpoints (e.g., for forms or datasets).
-
-You can provide credentials either directly via arguments or by pointing
-to a local text file containing the credentials.
+Initializes a \code{httr2} request object with the necessary server URL and
+Basic Authentication credentials.
 }
 \details{
-The function utilizes the \code{scto.verbose} option to control console
+The function uses the \code{scto.verbose} option to control console
 feedback. By default, it informs the user when authentication starts
 and succeeds. You can silence this by setting \code{options(scto.verbose = FALSE)}.
 }
 \section{Security & Credential Management}{
 
-While providing credentials via an \code{read_lines} is more convenient than
-hard-coding them in scripts, ensure the file is excluded from version
-control (e.g., listed in your \code{.gitignore}) to protect sensitive data.
-
 For maximum security and workflow flexibility, it is highly recommended to
 store your credentials as environment variables in your \code{.Renviron} file.
 This allows you to call the function by passing the environment variables
-directly to the arguments—see examples below.
+directly to the arguments—see examples below. If using interactively, it's
+recommended to leave \code{password = NULL} and input it when the system prompts.
 
 The object returned by this function is a standard \code{httr2} request.
 \code{httr2} is designed to comply with high-level secret management
@@ -70,28 +52,13 @@ console logs or tracebacks.
 # Direct authentication
 req <- cto_request("my-org", "user@org.com", "pw")
 
-# Authentication via file
-# Create a file "creds.txt" with 3 lines: my-org, user@org.com, pw
-req <- cto_request(read_lines = "creds.txt")
+# Input password when prompted
+req <- cto_request("my-org", "user@org.com")
 
 # Using environment variables for enhanced security (Recommended)
-# In the  .Renviron file, set:
-# SCTO_AUTH_FILE="path/to/creds.txt"
-req <- cto_request(read_lines = sys.getenv("SCTO_AUTH_FILE"))
-
-# Or set individual variables:
-# SCTO_SERVER="my-org"
-# SCTO_USER="user@org.com"
-# SCTO_PASS="pw"
-req <- cto_request(
-servername = Sys.getenv("SCTO_SERVER"),
-username = Sys.getenv("SCTO_USER"),
-password = Sys.getenv("SCTO_PASS"))
+req <- cto_request(Sys.getenv("SERVER"), Sys.getenv("USER"), Sys.getenv("PASS"))
 }
 }
 \seealso{
-\code{\link[usethis]{edit_r_environ}()}, \code{\link{Sys.setenv}()}
-}
-\author{
-Gutama Girja Urago
+\code{\link[httr2]{req_auth_basic}()}, \code{\link[usethis]{edit_r_environ}()}, \code{\link{Sys.setenv}()}
 }

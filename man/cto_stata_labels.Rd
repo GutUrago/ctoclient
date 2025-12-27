@@ -4,7 +4,7 @@
 \alias{cto_stata_labels}
 \title{Generate Stata Variable and Value Labels from SurveyCTO Form Definitions}
 \usage{
-cto_stata_labels(req, form_id, export = NULL, overwrite = TRUE)
+cto_stata_labels(req, form_id, path = NULL, overwrite = TRUE)
 }
 \arguments{
 \item{req}{A \code{httr2_request} object initialized via
@@ -12,11 +12,11 @@ cto_stata_labels(req, form_id, export = NULL, overwrite = TRUE)
 
 \item{form_id}{Character string. The unique ID of the SurveyCTO form.}
 
-\item{export}{Character (optional). The file path where the resulting \code{.do}
+\item{path}{Character (optional). The file path where the resulting \code{.do}
 file should be saved. Must end in \code{.do}.}
 
 \item{overwrite}{Logical. Whether to overwrite the file if it already
-exists at the \code{export} path. Defaults to \code{TRUE}.}
+exists at the \code{path} path. Defaults to \code{TRUE}.}
 }
 \value{
 A character vector containing the lines of the generated Stata \code{.do}
@@ -46,7 +46,7 @@ characters, and handles dynamic SurveyCTO string interpolation (e.g., \verb{$\{v
 \dontrun{
 # Authenticate and generate labels
 req <- cto_request("my_server", "username", "password")
-cto_stata_labels(req, "household_survey", export = "labels.do")
+cto_stata_labels(req, "household_survey", path = "labels.do")
 }
 }
 \author{

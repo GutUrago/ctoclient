@@ -21,7 +21,6 @@ Imports:
     cli,
     curl,
     dplyr,
-    glue,
     httr2,
     openxlsx2,
     purrr,

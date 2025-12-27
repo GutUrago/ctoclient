@@ -3,13 +3,10 @@
 #' Download Data Attached to SurveyCTO Forms
 #'
 #' @description
-#' `cto_get_form_datasets()` downloads data files attached to
-#' a specific SurveyCTO form. It downloads these data to temporary local storage,
-#' reads them into R, and cleans up the temporary files.
+#' Downloads data files attached to a specific SurveyCTO form, including server data.
 #'
-#' @param req A `httr2_request` object initialized via
-#' \code{\link{cto_request}()}.
-#' @param form_id Character string. The unique ID of the SurveyCTO form.
+#' @param req A `httr2_request` object initialized via \code{\link{cto_request}()}.
+#' @param form_id String. The unique ID of the SurveyCTO form.
 #' @param file_name Optional character vector. The specific name(s) of the
 #'   attached files to download (including the extension, often `.csv`). If `NULL`
 #'   (the default), all files attached to the form will be downloaded.
@@ -32,37 +29,34 @@
 #' @examples
 #' \dontrun{
 #' # Create a request object
-#' req <- cto_request("my_server", "username", "password")
+#' req <- cto_request("my_server", "username")
 #'
 #' # Download all CSVs attached to a specific form
-#' csv_data <- cto_get_form_datasets(req, "my_form_id")
+#' csv_data <- cto_form_datasets(req, "my_form_id")
 #'
 #' # Access a specific attached file called "villages.csv"
 #' village_df <- csv_data$villages
 #' }
-cto_get_form_datasets <- function(
-    req,
-    form_id,
-    file_name = NULL) {
+cto_form_datasets <- function(req, form_id, file_name = NULL) {
 
   verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
-  if (verbose) cli::cli_progress_step("Preparing to download form datasets...", spinner = TRUE)
+  if (verbose) cli_progress_step("Preparing datasets download...")
 
-  if (!is.null(file_name)) checkmate::assert_character(file_name, min.len = 1)
-  file_list <- cto_get_form_metadata(req, form_id)
+  if (!is.null(file_name)) assert_character(file_name, min.len = 1)
+  file_list <- cto_form_metadata(req, form_id)
 
-  if (verbose) cli::cli_progress_step("Checking form dataset names...", spinner = TRUE)
+  if (verbose) cli_progress_step("Checking form dataset names...")
   file_names <- names(file_list[["deployedGroupFiles"]][["mediaFiles"]])
   file_names <- file_names[grepl("\\.csv$", file_names, TRUE)]
 
   if (length(file_names) == 0) {
-    cli::cli_warn("No data files attached to {.field {form_id}}.")
+    cli_warn("No data files attached to {.field {form_id}}.")
     return(invisible())
   }
 
   if (!is.null(file_name)) {
     if (any(!(file_name %in% file_names))) {
-      cli::cli_abort(
+      cli_abort(
         c(
           "x" = "At least one of the specified file was not found on the server.",
           "i" = "Available files for this form: {.field {paste(file_names, collapse = ', ')}}"
@@ -73,7 +67,7 @@ cto_get_form_datasets <- function(
     file_names <- file_name
   }
 
-  if (verbose) cli::cli_progress_step("Downloading {.val {length(file_names)}} attached dataset{?s}...", spinner = TRUE)
+  if (verbose) cli_progress_step("Downloading {.val {length(file_names)}} dataset{?s}...")
   files <- purrr::map(file_names,
                   .f = \(fname) {
                     download_url <- file_list[["deployedGroupFiles"]][["mediaFiles"]][[fname]][["downloadLink"]]
@@ -86,9 +80,9 @@ cto_get_form_datasets <- function(
                     temp_file <- tempfile(fileext = file_ext)
 
                     req |>
-                      httr2::req_url(download_url) |>
-                      cto_perform() |>
-                      httr2::resp_body_raw() |>
+                      req_url(download_url) |>
+                      req_perform() |>
+                      resp_body_raw() |>
                       writeBin(temp_file)
 
                     temp_file
@@ -105,6 +99,6 @@ cto_get_form_datasets <- function(
     )
 
   names(df_list) <- stringr::str_remove(file_names, "\\.\\w+$")
-  if (verbose) cli::cli_progress_done("Form datasets download complete!")
-  return(invisible(df_list))
+  if (verbose) cli_progress_step("Download complete!")
+  invisible(df_list)
   }

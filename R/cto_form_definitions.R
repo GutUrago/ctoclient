@@ -3,13 +3,10 @@
 #' Download SurveyCTO Form Definitions
 #'
 #' @description
-#' `cto_get_form_definitions()` downloads the XLSForm definition for a specified SurveyCTO
-#' form. The function can retrieve either the currently
-#' deployed version of the form or all available historical versions.
+#' Downloads the XLSForm definition for a specified SurveyCTO form.
 #'
-#' @param req A `httr2_request` object initialized via
-#' \code{\link{cto_request}()}.
-#' @param form_id Character string. The unique identifier of the SurveyCTO form.
+#' @param req A `httr2_request` object initialized via \code{\link{cto_request}()}.
+#' @param form_id String. The unique ID of the SurveyCTO form.
 #' @param deployed_only Logical. If `TRUE` (default), only the currently deployed
 #'   form version is retrieved. If `FALSE`, all available historical versions are
 #'   downloaded and parsed.
@@ -27,59 +24,51 @@
 #' @return a `list`. If `deployed_only = TRUE`, the list contains three data frames.
 #'
 #' @export
-#' @author Gutama Girja Urago
 #'
 #' @examples
 #' \dontrun{
-#' # Initialize a SurveyCTO request using environment variables
-#' req <- cto_request(read_lines = Sys.getenv("SCTO_AUTH_FILE"))
+#' # Initialize a SurveyCTO request
+#' req <- cto_request("my-org", "user@org.com")
 #'
 #' # Download the currently deployed version of a form
-#' form_def <- cto_get_form_definitions(req, form_id = "household_survey")
-#'
-#' # Inspect the choices sheet
-#' print(form_def$choices)
+#' form_def <- cto_form_definitions(req, form_id = "household_survey")
 #'
 #' # Download all historical versions of the form
-#' all_defs <- cto_get_form_definitions(
+#' all_defs <- cto_form_definitions(
 #'   req,
 #'   form_id = "household_survey",
 #'   deployed_only = FALSE
 #' )
 #' }
-cto_get_form_definitions <- function(
-    req,
-    form_id,
-    deployed_only = TRUE
-    ) {
+cto_form_definitions <- function(req, form_id, deployed_only = TRUE) {
 
   verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
-  if (verbose) cli::cli_progress_step("Preparing to download the form...", spinner = TRUE)
 
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  checkmate::assert_string(form_id)
-  checkmate::assert_flag(deployed_only)
+  assert_class(req, c("httr2_request", "scto_request"))
+  assert_string(form_id)
+  assert_flag(deployed_only)
+
+  if (verbose) cli_progress_step("Preparing form download")
 
   unix_ms <- as.numeric(Sys.time()) * 1000
-  url_path <- glue("forms/{form_id}/files")
-
-  if (verbose) cli::cli_progress_step("Checking the form version...", spinner = TRUE)
+  url_path <- str_glue("forms/{form_id}/files")
 
   file_list <- req |>
-    cto_url_path_append(url_path) |>
-    cto_url_query(t = unix_ms) |>
-    cto_perform() |>
-    cto_body_json(simplifyVector = TRUE)
+    req_url_path_append(url_path) |>
+    req_url_query(t = unix_ms) |>
+    req_perform() |>
+    resp_body_json(simplifyVector = TRUE)
 
-  if (verbose) cli::cli_progress_step("Starting form download...", spinner = TRUE)
   if (deployed_only) {
+
+    if (verbose) cli_progress_step("Downloading deployed form version...")
     download_url <- file_list[["deployedGroupFiles"]][["definitionFile"]][["downloadLink"]]
     temp_file <- tempfile(fileext = ".xlsx")
 
     req |>
-      httr2::req_url(download_url) |>
-      cto_perform() |>
-      httr2::resp_body_raw() |>
+      req_url(download_url) |>
+      req_perform() |>
+      resp_body_raw() |>
       writeBin(temp_file)
 
     sheets <- c("survey", "choices", "settings")
@@ -92,22 +81,28 @@ cto_get_form_definitions <- function(
                              skip_empty_cols = TRUE))
     unlink(temp_file)
     names(form_out) <- sheets
+
   } else {
+
     all_versions <- dplyr::bind_rows(
       file_list[["deployedGroupFiles"]][["definitionFile"]],
-      file_list[["previousDefinitionFiles"]])
+      file_list[["previousDefinitionFiles"]]
+      )
 
     form_versions <- all_versions[["formVersion"]]
     download_urls <- all_versions[["downloadLink"]]
 
+    if (verbose) cli_progress_step("Downloading {.val {length(form_versions)}} form version{?s}...")
+
     form_out <- purrr::map2(form_versions, download_urls,
                 .f = \(ver, url) {
+
                   temp_file <- tempfile(fileext = ".xlsx")
 
                   req |>
-                    httr2::req_url(url) |>
-                    cto_perform() |>
-                    httr2::resp_body_raw() |>
+                    req_url(url) |>
+                    req_perform() |>
+                    resp_body_raw() |>
                     writeBin(temp_file)
 
                   sheets <- c("survey", "choices", "settings")
@@ -125,6 +120,6 @@ cto_get_form_definitions <- function(
     names(form_out) <- paste0("version_", form_versions)
   }
 
-  if (verbose) cli::cli_progress_done("Form download complete!")
-  return(invisible(form_out))
+  if (verbose) cli_progress_step("Download complete!")
+  invisible(form_out)
 }
