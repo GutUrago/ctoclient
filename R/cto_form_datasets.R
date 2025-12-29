@@ -72,7 +72,7 @@ cto_form_datasets <- function(req, form_id, file_name = NULL) {
                   .f = \(fname) {
                     download_url <- file_list[["deployedGroupFiles"]][["mediaFiles"]][[fname]][["downloadLink"]]
 
-                    if (grepl("^/forms", download_url)) {   # Server data
+                    if (grepl("^/forms", download_url)) {   # Server datasets
                       download_url <- stringr::str_glue("https://{secrets$servername}.surveycto.com{download_url}")
                     }
 

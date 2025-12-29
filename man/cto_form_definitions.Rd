@@ -16,7 +16,8 @@ form version is retrieved. If \code{FALSE}, all available historical versions ar
 downloaded and parsed.}
 }
 \value{
-a \code{list}. If \code{deployed_only = TRUE}, the list contains three data frames.
+a \code{list}. When \code{deployed_only = FALSE}, each form version is returned as a separate
+list element, named using the corresponding form version identifier.
 }
 \description{
 Downloads the XLSForm definition for a specified SurveyCTO form.
@@ -26,9 +27,6 @@ The XLSForm file is downloaded from the SurveyCTO server and parsed using
 \pkg{openxlsx2}. The returned object contains the three core XLSForm sheets
 required to understand form structure and logic:
 \code{survey}, \code{choices}, and \code{settings}.
-
-When \code{deployed_only = FALSE}, each form version is returned as a separate
-list element, named using the corresponding form version identifier.
 }
 \examples{
 \dontrun{
@@ -36,13 +34,10 @@ list element, named using the corresponding form version identifier.
 req <- cto_request("my-org", "user@org.com")
 
 # Download the currently deployed version of a form
-form_def <- cto_form_definitions(req, form_id = "household_survey")
+form_id <- "household_survey"
+form_def <- cto_form_definitions(req, form_id)
 
 # Download all historical versions of the form
-all_defs <- cto_form_definitions(
-  req,
-  form_id = "household_survey",
-  deployed_only = FALSE
-)
+all_defs <- cto_form_definitions(req, form_id, FALSE)
 }
 }

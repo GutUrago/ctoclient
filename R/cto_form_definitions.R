@@ -17,11 +17,9 @@
 #' required to understand form structure and logic:
 #' \code{survey}, \code{choices}, and \code{settings}.
 #'
-#' When `deployed_only = FALSE`, each form version is returned as a separate
+#'
+#' @return a `list`. When `deployed_only = FALSE`, each form version is returned as a separate
 #' list element, named using the corresponding form version identifier.
-#'
-#'
-#' @return a `list`. If `deployed_only = TRUE`, the list contains three data frames.
 #'
 #' @export
 #'
@@ -31,14 +29,11 @@
 #' req <- cto_request("my-org", "user@org.com")
 #'
 #' # Download the currently deployed version of a form
-#' form_def <- cto_form_definitions(req, form_id = "household_survey")
+#' form_id <- "household_survey"
+#' form_def <- cto_form_definitions(req, form_id)
 #'
 #' # Download all historical versions of the form
-#' all_defs <- cto_form_definitions(
-#'   req,
-#'   form_id = "household_survey",
-#'   deployed_only = FALSE
-#' )
+#' all_defs <- cto_form_definitions(req, form_id, FALSE)
 #' }
 cto_form_definitions <- function(req, form_id, deployed_only = TRUE) {
 
@@ -49,15 +44,7 @@ cto_form_definitions <- function(req, form_id, deployed_only = TRUE) {
   assert_flag(deployed_only)
 
   if (verbose) cli_progress_step("Preparing form download")
-
-  unix_ms <- as.numeric(Sys.time()) * 1000
-  url_path <- str_glue("forms/{form_id}/files")
-
-  file_list <- req |>
-    req_url_path_append(url_path) |>
-    req_url_query(t = unix_ms) |>
-    req_perform() |>
-    resp_body_json(simplifyVector = TRUE)
+  file_list <- cto_form_metadata(req, form_id)
 
   if (deployed_only) {
 

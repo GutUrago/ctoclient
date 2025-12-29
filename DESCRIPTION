@@ -1,8 +1,8 @@
 Package: scto
 Type: Package
-Title: Seamless 'SurveyCTO' Data Pipelines
+Title: Modern and Seamless 'SurveyCTO' Data Pipelines
 Version: 0.0.0.9000
-Date: 2025-12-18
+Date: 2025-12-29
 Authors@R: c(
     person(
       "Gutama Girja", "Urago",
@@ -11,7 +11,14 @@ Authors@R: c(
       comment = c(ORCID = "0000-0001-5588-2301")
     )
   )
-Description: What the package does (one paragraph).
+Description: An R client for the 'SurveyCTO' REST API that provides a modern, 
+    consistent interface for programmatically accessing server resources. 
+    Built on top of the 'httr2' package, it enables secure and efficient retrieval 
+    of tidy, analysis-ready data. In addition, it generates clean variable and 
+    value labels for Stata users. The package includes functions to download 
+    form metadata, form definitions, attachments, and associated media files. 
+    It emphasizes robust authentication and request handling, making it 
+    suitable for automated survey monitoring and downstream analysis.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -26,7 +33,8 @@ Imports:
     purrr,
     readr,
     rlang,
-    stringr
+    stringr,
+    tidyr
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

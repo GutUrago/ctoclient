@@ -17,7 +17,7 @@
 #'
 #'
 #' @return
-#' An invisible named `list` containing form metadata as returned by the
+#' A named `list` containing form metadata as returned by the
 #' SurveyCTO server.
 #'
 #' @export

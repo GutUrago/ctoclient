@@ -12,7 +12,7 @@ cto_form_metadata(req, form_id)
 \item{form_id}{String. The unique ID of the SurveyCTO form.}
 }
 \value{
-An invisible named \code{list} containing form metadata as returned by the
+A named \code{list} containing form metadata as returned by the
 SurveyCTO server.
 }
 \description{

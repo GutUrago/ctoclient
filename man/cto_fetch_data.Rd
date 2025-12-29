@@ -47,7 +47,9 @@ collection to data analysis by automatically handling common SurveyCTO
 formatting tasks:
 \itemize{
 \item \strong{Data Type Correction:} Converts text-based numbers, dates,
-and timestamps into actual R numeric and date objects.
+and timestamps into actual R numeric and date objects. It leverages
+\code{\link[readr]{parse_guess}()}, which uses a number of heuristics to
+determine which type of vector is "best", to guess unknown field types.
 \item \strong{Structural Cleanup:} Removes "administrative" rows and columns
 used only for form layout, such as notes, group headers, and repeat markers.
 \item \strong{Column Organization:} Reorders columns so that key metadata

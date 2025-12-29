@@ -17,11 +17,10 @@ use \code{"example"}.}
 entering the password directly when calling this function, as it will be
 captured by \code{.Rhistory}. Instead, leave it unset (\code{NULL}) and the default behavior
 will prompt you for it interactively. If needed for automation purposes,
-it's recommended to always use the environmental variables.}
+it's recommended to always use the environment variables.}
 }
 \value{
-A \code{httr2_request} object prepared with the base URL and
-authentication headers.
+An authenticated \code{httr2_request} object
 }
 \description{
 Initializes a \code{httr2} request object with the necessary server URL and
@@ -40,11 +39,8 @@ This allows you to call the function by passing the environment variables
 directly to the arguments—see examples below. If using interactively, it's
 recommended to leave \code{password = NULL} and input it when the system prompts.
 
-The object returned by this function is a standard \code{httr2} request.
-\code{httr2} is designed to comply with high-level secret management
-standards; specifically, it utilizes obfuscated storage for credentials in
-memory and ensures that secrets like your password are not leaked into R
-console logs or tracebacks.
+The object returned by this function is a standard \code{httr2} request, which is designed
+to comply with high-level secret management standards.
 }
 
 \examples{
@@ -56,7 +52,7 @@ req <- cto_request("my-org", "user@org.com", "pw")
 req <- cto_request("my-org", "user@org.com")
 
 # Using environment variables for enhanced security (Recommended)
-req <- cto_request(Sys.getenv("SERVER"), Sys.getenv("USER"), Sys.getenv("PASS"))
+req <- cto_request("my-org", Sys.getenv("USER"), Sys.getenv("PASS"))
 }
 }
 \seealso{

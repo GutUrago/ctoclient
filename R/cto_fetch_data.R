@@ -18,6 +18,7 @@
 #'   definition and automatically converts columns to their correct types
 #'   (numeric, date, datetime), order variables and removes structural fields (groups/notes).
 #'
+#'
 #' @returns A `data.frame`. If `tidy = FALSE`, returns the raw data obtained from
 #' returned JSON object. If `tidy = TRUE`, returns a cleaned data with optimized types
 #' and column ordering.
@@ -28,7 +29,9 @@
 #' formatting tasks:
 #' \itemize{
 #'   \item **Data Type Correction:** Converts text-based numbers, dates,
-#'     and timestamps into actual R numeric and date objects.
+#'     and timestamps into actual R numeric and date objects. It leverages
+#'      \code{\link[readr]{parse_guess}()}, which uses a number of heuristics to
+#'      determine which type of vector is "best", to guess unknown field types.
 #'   \item **Structural Cleanup:** Removes "administrative" rows and columns
 #'     used only for form layout, such as notes, group headers, and repeat markers.
 #'   \item **Column Organization:** Reorders columns so that key metadata
@@ -117,6 +120,7 @@ cto_fetch_data <- function(
         }
       )[-1],
       is_repeat      = .data$repeat_level > 0,
+      is_gps         = grepl("^geopoint", .data$type, TRUE),
       is_numeric     = grepl("^select_one|^integer|^decimal|^sensor_", .data$type, TRUE),
       is_slt_multi   = grepl("^select_multiple", .data$type, TRUE),
       is_date        = grepl("^date|^today", .data$type, TRUE),
@@ -135,18 +139,20 @@ cto_fetch_data <- function(
 
     )
 
-  cs_dates <- c("CompletionDate", "SubmissionDate")
-  all_fields <- survey$regex_varname[!survey$is_null_fields]
-  null_fields <- survey$regex_varname[survey$is_null_fields]
-  numeric_fields <- survey$regex_varname[survey$is_numeric]
-  multi_field <- survey$regex_varname[survey$is_slt_multi]
-  date_fields <- survey$regex_varname[survey$is_date]
+  cs_dates        <- c("CompletionDate", "SubmissionDate")
+  all_fields      <- survey$regex_varname[!survey$is_null_fields]
+  null_fields     <- survey$regex_varname[survey$is_null_fields]
+  numeric_fields  <- survey$regex_varname[survey$is_numeric]
+  multi_field     <- survey$regex_varname[survey$is_slt_multi]
+  date_fields     <- survey$regex_varname[survey$is_date]
   datetime_fields <- c(cs_dates, survey$regex_varname[survey$is_datetime])
-  media_fields <- survey$regex_varname[survey$is_media]
+  media_fields    <- survey$regex_varname[survey$is_media]
+  gps_fields      <- survey$regex_varname[survey$is_gps]
 
   tidy_data <- select(raw_data, any_of(cs_dates), matches(all_fields), everything())
 
   if (length(null_fields) > 0) tidy_data <- select(tidy_data, !matches(null_fields))
+
   tidy_data <- mutate(tidy_data, across(
     matches(datetime_fields), ~ as.POSIXct(.x, format = "%B %d, %Y %I:%M:%S %p")
   ))
@@ -168,6 +174,35 @@ cto_fetch_data <- function(
       tidy_data, across(matches(media_fields), ~ ifelse(grepl("^https", .x, TRUE), basename(.x), .x))
     )
   }
+
+
+  if (length(gps_fields) > 0) {
+    nms <- names(tidy_data)
+    suffix <- c("latitude", "longitude", "altitude", "accuracy")
+    keep_idx <- sapply(gps_fields, function(pattern) {
+      actual_col <- grep(pattern, nms, value = TRUE)
+      if (length(actual_col) == 0) return(FALSE)
+      check_fld <- paste0(actual_col[1], "_", suffix[1])
+      !(check_fld %in% nms)
+    })
+    gps_fields <- gps_fields[keep_idx]
+  }
+
+  if (length(gps_fields) > 0) {
+    tidy_data <- tidyr::separate_wider_delim(
+      data = tidy_data,
+      cols = matches(gps_fields),
+      delim = " ",
+      names = c("latitude", "longitude", "altitude", "accuracy"),
+      names_sep = "_",
+      too_few = "align_start",
+      cols_remove = FALSE
+    )
+  }
+
+  tidy_data <- mutate(
+    tidy_data, across(is.character, readr::parse_guess)
+  )
 
   if (verbose) cli_progress_step("Tidying complete!")
   return(tidy_data)
