@@ -32,12 +32,12 @@
 #' req <- cto_request("my_server", "username")
 #'
 #' # Download all CSVs attached to a specific form
-#' csv_data <- cto_form_datasets(req, "my_form_id")
+#' csv_data <- cto_form_dataset(req, "my_form_id")
 #'
 #' # Access a specific attached file called "villages.csv"
 #' village_df <- csv_data$villages
 #' }
-cto_form_datasets <- function(req, form_id, file_name = NULL) {
+cto_form_dataset <- function(req, form_id, file_name = NULL) {
 
   verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
   if (verbose) cli_progress_step("Preparing datasets download...")

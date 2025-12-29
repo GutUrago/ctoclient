@@ -43,6 +43,8 @@
 #'
 #' @export
 #'
+#' @seealso [cto_request()], [cto_fetch_attachment()], [cto_form_dataset()]
+#'
 #'
 #' @examples
 #' \dontrun{
@@ -100,7 +102,7 @@ cto_fetch_data <- function(
 
   if (verbose) cli_progress_step("Tidying data...")
 
-  form <- cto_form_definitions(req, form_id)
+  form <- cto_form_definition(req, form_id)
 
   survey <- form$survey |>
     mutate(

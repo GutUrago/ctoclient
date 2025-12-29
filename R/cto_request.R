@@ -65,6 +65,7 @@ cto_request <- function(server, username, password = NULL) {
   req <- httr2::request(base_url)
   req <- httr2::req_user_agent(req, "scto package in R")
   req <- httr2::req_auth_basic(req, username, password)
+  req <- httr2::req_retry(req, max_tries = 3)
 
   if (verbose) cli_progress_step("Verifying credentials...")
   resp <- req_perform(req)

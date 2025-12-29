@@ -71,3 +71,6 @@ raw <- cto_fetch_data(req, "my_form_id")
 clean <- cto_fetch_data(req, "my_form_id", "keys/my_key.pem")
 }
 }
+\seealso{
+\code{\link[=cto_request]{cto_request()}}, \code{\link[=cto_fetch_attachment]{cto_fetch_attachment()}}, \code{\link[=cto_form_dataset]{cto_form_dataset()}}
+}

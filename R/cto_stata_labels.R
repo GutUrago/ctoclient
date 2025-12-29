@@ -47,7 +47,7 @@
 cto_stata_labels <- function(req, form_id, path = NULL, overwrite = TRUE) {
 
   if (!is.null(path)) checkmate::assert_path_for_output(path, overwrite, "do")
-  form <- cto_form_definitions(req, form_id)
+  form <- cto_form_definition(req, form_id)
 
   ts <- format(Sys.time(), format = '%b %d, %Y at %H:%M %Z')
   t1 <- center_text(str_glue("{toupper(form_id)} VARIABLE AND VALUE LABELS"))

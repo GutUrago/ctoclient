@@ -30,12 +30,12 @@
 #'
 #' # Download the currently deployed version of a form
 #' form_id <- "household_survey"
-#' form_def <- cto_form_definitions(req, form_id)
+#' form_def <- cto_form_definition(req, form_id)
 #'
 #' # Download all historical versions of the form
-#' all_defs <- cto_form_definitions(req, form_id, FALSE)
+#' all_defs <- cto_form_definition(req, form_id, FALSE)
 #' }
-cto_form_definitions <- function(req, form_id, deployed_only = TRUE) {
+cto_form_definition <- function(req, form_id, deployed_only = TRUE) {
 
   verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
 
