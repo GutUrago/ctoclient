@@ -22,17 +22,17 @@ center_text <- function(text, fill = " ", width = 78) {
 }
 
 # Helper ----
-gen_regex_varname <- function(name, rpt_lvl, multi) {
+gen_regex_varname <- function(name, rpt_lvl, multi, mp = "_*[0-9]+") { # Add here multi place holder
   if (rpt_lvl == 0) {
     if (multi) {
-      return(paste0("^", name, "_*[0-9]+", "$"))
+      return(paste0("^", name, mp, "$"))
     } else {
       return(paste0("^", name, "$"))
     }
   } else {
     rpt <- strrep("_[0-9]+", rpt_lvl)
     if (multi) {
-      return(paste0("^", name, "_*[0-9]+", rpt, "$"))
+      return(paste0("^", name, mp, rpt, "$"))
     } else {
       return(paste0("^", name, rpt, "$"))
     }

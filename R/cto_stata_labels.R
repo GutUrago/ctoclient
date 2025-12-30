@@ -89,22 +89,50 @@ cto_stata_labels <- function(req, form_id, path = NULL, overwrite = TRUE) {
     survey <- dplyr::filter(survey, !grepl("yes", .data$disabled, TRUE))
   }
 
-  valid_choices <- survey |>
+
+  valid_choices_s1 <- survey |>
     dplyr::filter(grepl("select_one", .data$type, TRUE)) |>
     mutate(list_name = str_extract(.data$type, "(?<= )\\S+")) |>
     dplyr::pull("list_name") |>
     unique()
 
-  choice_sets <- form$choices |>
-    mutate(value = suppressWarnings(as.numeric(.data$value)),
-                  list_name = str_squish(.data$list_name)) |>
-    dplyr::filter(!is.na(.data$value), .data$list_name %in% valid_choices) |>
+  valid_choices_sm <- survey |>
+    dplyr::filter(grepl("select_multiple", .data$type, TRUE)) |>
+    mutate(list_name = str_extract(.data$type, "(?<= )\\S+")) |>
+    dplyr::pull("list_name") |>
+    unique()
+
+  choices_all <- form$choices |>
+    mutate(
+      value = suppressWarnings(as.numeric(.data$value)),
+      list_name = str_squish(.data$list_name),
+      label_clean = str_remove_all(.data[[val_label_col]], "<[^<>]*>"),
+      label_clean = str_replace_all(.data$label_clean, '"', "'"),
+      label_clean = str_squish(.data$label_clean)
+    ) |>
+    dplyr::filter(!is.na(.data$value))
+
+
+  choice_sets_s1 <- choices_all |>
+    dplyr::filter(.data$list_name %in% valid_choices_s1) |>
     dplyr::summarise(
       stata_cmd = paste0('label define ', dplyr::first(.data$list_name), ' ',
-                         paste0(.data$value, ' "', .data[[val_label_col]], '"', collapse = " "),
+                         paste0(.data$value, ' "', .data$label_clean, '"', collapse = " "),
                          ', modify'),
       .by = "list_name"
     )
+
+  multi_lookup <- choices_all |>
+    select("list_name", "value", "label_clean") |>
+    mutate(
+      value = ifelse(
+        .data$value < 0, paste0("_", abs(.data$value)), as.character(.data$value)
+        )
+    ) |>
+    dplyr::filter(.data$list_name %in% valid_choices_sm) |>
+    dplyr::group_split(.data$list_name)
+
+  names(multi_lookup) <- sort(valid_choices_sm)
 
 
   do_file_content <- c(
@@ -112,7 +140,7 @@ cto_stata_labels <- function(req, form_id, path = NULL, overwrite = TRUE) {
     paste0("*", center_text(" VALUE LABELS ", "-"), "*"),
     "",
     "label define slt_multi_binary 1 \"Yes\" 0 \"No\", modify",
-    choice_sets[["stata_cmd"]],
+    choice_sets_s1[["stata_cmd"]],
     "", ""
   )
 
@@ -140,6 +168,9 @@ cto_stata_labels <- function(req, form_id, path = NULL, overwrite = TRUE) {
                               str_extract(.data$type, "(?<= )\\S+"),
                               NA_character_),
       is_slt_multi   = grepl("^select_multiple", .data$type, TRUE),
+      list_multi     = ifelse(.data$is_slt_multi,
+                              str_extract(.data$type, "(?<= )\\S+"),
+                              NA_character_),
       list_name      = ifelse(.data$is_slt_multi, "slt_multi_binary", .data$list_name),
       is_null_fields = grepl("^note|^begin group|^end group|^begin repeat|^end repeat", .data$type, TRUE),
       regex_varname  = purrr::pmap_chr(
@@ -169,9 +200,47 @@ cto_stata_labels <- function(req, form_id, path = NULL, overwrite = TRUE) {
       has_list  = !is.na(.data$list_name),
 
       stata_cmd = dplyr::case_when(
+        .data$is_slt_multi ~ purrr::pmap_chr(
+          list(.data$regex_varname, .data$list_multi, .data$var_label, .data$var_note, .data$repeat_level),
+          function(n, l, v, vn, r) {
 
-        # ---- Repeat or select-multiple (same structure) ----
-        .data$is_repeat | .data$is_slt_multi ~
+            cmd <- str_c(
+              "cap {\n",
+              "\tunab vars : ", n, "*\n",
+              "\tforeach var of local vars {\n",
+              "\t\tif regexm(\"`var'\", \"", n, "\") {\n",
+              "\t\t\tcap note `var': \"", vn, "\"\n",
+              "\t\t\tcap label values `var' slt_multi_binary\n"
+            )
+
+            if (!is.na(l) && !is.null(multi_lookup[[l]])) {
+              choices <- multi_lookup[[l]]
+
+              choice_cmds <- purrr::pmap_chr(
+                list(choices$value, choices$label_clean),
+                function(val, lbl) {
+
+                  regex_pattern <- stringr::str_replace(n, stringr::fixed("*[0-9]+"), val)
+
+                  full_label <- paste0(lbl, " - ", v)
+                  if(nchar(full_label) > 80) full_label <- stringr::str_trunc(full_label, 80)
+
+                  str_c(
+                    "\t\tif regexm(\"`var'\", \"", regex_pattern, "\") {\n",
+                    "\t\t\tcap label variable `var' \"", full_label, "\"\n",
+                    "\t\t\t}\n"
+                  )
+
+                })
+              cmd <- paste0(cmd, paste(choice_cmds, collapse = ""))
+
+            } else {
+              cmd <- paste0(cmd, "\t\tcap label variable `var' \"", v, "\"\n")
+            }
+            str_c(cmd, "\t\t}\n", "\t}\n", "}")
+          }
+        ),
+        .data$is_repeat ~
           str_c(
             "cap {\n",
             "\tunab vars : ", .data$name, "*\n",
@@ -188,8 +257,6 @@ cto_stata_labels <- function(req, form_id, path = NULL, overwrite = TRUE) {
             "\t}\n",
             "}"
           ),
-
-        # ---- Non-repeat, select-one ----
         .data$has_list ~
           str_c(
             "cap label variable ", .data$name, " \"", .data$var_label, "\"\n",
@@ -205,6 +272,7 @@ cto_stata_labels <- function(req, form_id, path = NULL, overwrite = TRUE) {
           )
       )
     )
+
 
   do_file_content <- c(
     do_file_content,
@@ -229,8 +297,9 @@ cto_stata_labels <- function(req, form_id, path = NULL, overwrite = TRUE) {
   do_file_content <- c(
     do_file_content,
     paste0("*", center_text(" DEFAULTS FIELDS ", "-"), "*"),
+    "",
     defaults, "", "",
-    paste0("*", center_text(" THE END! ", "-"), "*"),
+    paste0("*", center_text(" THE END! ", "-"), "*")
   )
 
   if (!is.null(path)) {
@@ -240,4 +309,3 @@ cto_stata_labels <- function(req, form_id, path = NULL, overwrite = TRUE) {
 
   return(invisible(do_file_content))
 }
-
