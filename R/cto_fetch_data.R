@@ -31,7 +31,7 @@
 #'   \item **Data Type Correction:** Converts text-based numbers, dates,
 #'     and timestamps into actual R numeric and date objects. It leverages
 #'      \code{\link[readr]{parse_guess}()}, which uses a number of heuristics to
-#'      determine which type of vector is "best", to guess unknown field types.
+#'      determine which type of vector is "best".
 #'   \item **Structural Cleanup:** Removes "administrative" rows and columns
 #'     used only for form layout, such as notes, group headers, and repeat markers.
 #'   \item **Column Organization:** Reorders columns so that key metadata
@@ -39,6 +39,8 @@
 #'     in their original order.
 #'   \item **Media Handling:** Cleans links for images, audio, or video files
 #'     to show just the filename, making it easier to reference attachments.
+#'     \item **Geopoint Splitting:** Splits geopoint fields into four variables,
+#'     with _latitude, _longitude, _altitude and _accuracy suffixes.
 #' }
 #'
 #' @export
@@ -82,7 +84,7 @@ cto_fetch_data <- function(
   url_path <- str_glue("api/v2/forms/data/wide/json/{form_id}?date={start_date}")
 
   req_data <- req |>
-    req_url_path_append(url_path) |>
+    req_url_path(url_path) |>
     req_url_query(r = status, .multi = "pipe")
 
   if (!is.null(private_key)) {
@@ -112,13 +114,9 @@ cto_fetch_data <- function(
         .data$type,
         .init = 0,
         .f = function(i, x) {
-          if (grepl("begin repeat", x, TRUE)) {
-            i + 1
-          } else if (grepl("end repeat", x, TRUE)) {
-            i - 1
-          } else {
-            i
-          }
+          if (grepl("begin repeat", x, TRUE)) i + 1
+          else if (grepl("end repeat", x, TRUE)) i - 1
+          else i
         }
       )[-1],
       is_repeat      = .data$repeat_level > 0,

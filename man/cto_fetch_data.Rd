@@ -49,7 +49,7 @@ formatting tasks:
 \item \strong{Data Type Correction:} Converts text-based numbers, dates,
 and timestamps into actual R numeric and date objects. It leverages
 \code{\link[readr]{parse_guess}()}, which uses a number of heuristics to
-determine which type of vector is "best", to guess unknown field types.
+determine which type of vector is "best".
 \item \strong{Structural Cleanup:} Removes "administrative" rows and columns
 used only for form layout, such as notes, group headers, and repeat markers.
 \item \strong{Column Organization:} Reorders columns so that key metadata
@@ -57,6 +57,8 @@ used only for form layout, such as notes, group headers, and repeat markers.
 in their original order.
 \item \strong{Media Handling:} Cleans links for images, audio, or video files
 to show just the filename, making it easier to reference attachments.
+\item \strong{Geopoint Splitting:} Splits geopoint fields into four variables,
+with _latitude, _longitude, _altitude and _accuracy suffixes.
 }
 }
 \examples{

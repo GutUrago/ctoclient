@@ -30,7 +30,6 @@
 #' # Retrieve metadata for a form
 #' meta <- cto_form_metadata(req, form_id = "household_survey")
 #' }
-
 cto_form_metadata <- function(req, form_id) {
 
   verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
@@ -45,7 +44,7 @@ cto_form_metadata <- function(req, form_id) {
 
   if (verbose) cli_progress_step("Downloading form metadata...")
   form_metadata <- req |>
-    req_url_path_append(url_path) |>
+    req_url_path(url_path) |>
     req_url_query(t = unix_ms) |>
     req_perform() |>
     resp_body_json(simplifyVector = TRUE)

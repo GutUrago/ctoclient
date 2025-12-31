@@ -1,7 +1,7 @@
 #' @importFrom checkmate assert_string assert_class assert_flag assert_character
 #' @importFrom cli cli_abort cli_warn cli_inform cli_progress_step
 #' @importFrom stringr str_c str_glue str_extract str_squish str_replace_all str_remove_all
-#' @importFrom httr2 req_url req_url_path_append req_url_query req_perform resp_body_json resp_body_raw
+#' @importFrom httr2 req_url req_url_path req_url_query req_perform resp_body_json resp_body_raw
 #' @importFrom rlang `:=` .data
 #' @importFrom dplyr mutate select across
 #' @importFrom tidyr matches all_of any_of everything

@@ -61,14 +61,24 @@ cto_request <- function(server, username, password = NULL) {
 
   if (verbose) cli_progress_step("Requesting access to {.field {server}}")
 
+  cookie_jar <- tempfile()
+
   base_url <- str_glue("https://{server}.surveycto.com")
-  req <- httr2::request(base_url)
-  req <- httr2::req_user_agent(req, "scto package in R")
-  req <- httr2::req_auth_basic(req, username, password)
-  req <- httr2::req_retry(req, max_tries = 3)
+  req <- httr2::request(base_url) |>
+    httr2::req_user_agent("scto package in R") |>
+    httr2::req_auth_basic(username, password) |>
+    httr2::req_retry(max_tries = 3) |>
+    httr2::req_cookie_preserve(cookie_jar)
 
   if (verbose) cli_progress_step("Verifying credentials...")
   resp <- req_perform(req)
+
+  if (httr2::resp_header_exists(resp, "x-csrf-token")) {
+    req <- httr2::req_headers(
+      req,
+      `x-csrf-token` = httr2::resp_header(resp, "x-csrf-token")
+    )
+  }
 
   class(req) <- c(class(req), "scto_request")
   if (verbose) cli_progress_step("Access granted!")

@@ -88,13 +88,9 @@ cto_fetch_attachment <- function(
         .data$type,
         .init = 0,
         .f = function(i, x) {
-          if (grepl("begin repeat", x, TRUE)) {
-            i + 1
-          } else if (grepl("end repeat", x, TRUE)) {
-            i - 1
-          } else {
-            i
-          }
+          if (grepl("begin repeat", x, TRUE)) i + 1
+          else if (grepl("end repeat", x, TRUE)) i - 1
+          else i
         }
       )[-1],
       is_repeat      = .data$repeat_level > 0,
