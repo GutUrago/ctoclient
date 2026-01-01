@@ -22,7 +22,9 @@
 #' feedback. By default, it informs the user when authentication starts
 #' and succeeds. You can silence this by setting \code{options(scto.verbose = FALSE)}.
 #'
-#' @return An authenticated \code{httr2_request} object
+#' @return An authenticated \code{httr2_request} object. The endpoint can be
+#' modified using \code{\link[httr2]{req_url_path}()}, \code{\link[httr2]{req_url_query}()},
+#' and others.
 #'
 #' @section Security & Credential Management:
 #' For maximum security and workflow flexibility, it is highly recommended to

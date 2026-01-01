@@ -55,7 +55,7 @@ cto_form_dataset <- function(req, form_id, file_name = NULL) {
   }
 
   if (!is.null(file_name)) {
-    if (any(!(file_name %in% file_names))) {
+    if (!all(file_name %in% file_names)) {
       cli_abort(
         c(
           "x" = "At least one of the specified file was not found on the server.",
@@ -68,25 +68,24 @@ cto_form_dataset <- function(req, form_id, file_name = NULL) {
   }
 
   if (verbose) cli_progress_step("Downloading {.val {length(file_names)}} dataset{?s}...")
-  files <- purrr::map(file_names,
-                  .f = \(fname) {
-                    download_url <- file_list[["deployedGroupFiles"]][["mediaFiles"]][[fname]][["downloadLink"]]
+  files <- purrr::map(
+    file_names,
+    .f = \(fname) {
 
-                    if (grepl("^/forms", download_url)) {   # Server datasets
-                      download_url <- stringr::str_glue("https://{secrets$servername}.surveycto.com{download_url}")
-                    }
+    download_url <- file_list[["deployedGroupFiles"]][["mediaFiles"]][[fname]][["downloadLink"]]
+    temp_file <- tempfile(fileext = ".csv")
 
-                    file_ext <- stringr::str_extract(fname, "\\.\\w+$")
-                    temp_file <- tempfile(fileext = file_ext)
-
-                    req |>
-                      req_url(download_url) |>
-                      req_perform() |>
-                      resp_body_raw() |>
-                      writeBin(temp_file)
-
-                    temp_file
-                  })
+    if (grepl("^/forms", download_url)) {
+      req |>
+        req_url_path(download_url) |>
+        req_perform(temp_file)
+    } else {
+      req |>
+        req_url(download_url) |>
+        req_perform(temp_file)
+    }
+    temp_file
+  })
 
 
   df_list <- purrr::map(

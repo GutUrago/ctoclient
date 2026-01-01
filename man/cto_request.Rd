@@ -20,7 +20,9 @@ will prompt you for it interactively. If needed for automation purposes,
 it's recommended to always use the environment variables.}
 }
 \value{
-An authenticated \code{httr2_request} object
+An authenticated \code{httr2_request} object. The endpoint can be
+modified using \code{\link[httr2]{req_url_path}()}, \code{\link[httr2]{req_url_query}()},
+and others.
 }
 \description{
 Initializes a \code{httr2} request object with the necessary server URL and

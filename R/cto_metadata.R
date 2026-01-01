@@ -1,8 +1,8 @@
 
 #' Retrieve Metadata from a SurveyCTO Server
 #'
-#' This function connects to the SurveyCTO console to retrieve structural metadata
-#' regarding forms, groups, and datasets available on the server.
+#' This function retrieves structural metadata regarding forms, groups, and
+#' datasets available on the server.
 #'
 #' @param req A `httr2_request` object initialized via \code{\link{cto_request}()}.
 #' @param which A character string specifying which subset of metadata to return.
@@ -14,7 +14,10 @@
 #'     \item \code{"forms"}: Returns a data frame of deployed forms.
 #'   }
 #'
-#' @return An object containing the requested metadata.
+#' @return
+#'
+#'`cto_form_ids` returns a vector of form IDs, and `cto_metadata` returns an
+#'object containing the requested metadata.
 #'   \itemize{
 #'     \item If \code{which = "all"}, returns a named list.
 #'     \item Otherwise, returns the specific \code{data.frame} requested.
@@ -27,6 +30,9 @@
 #' \dontrun{
 #' # Authenticate first
 #' req <- cto_request("myserver", "myuser")
+#'
+#' # Available form IDs
+#' ids <- cto_form_ids(req)
 #'
 #' # Get all metadata
 #' meta <- cto_metadata(req)
@@ -50,3 +56,12 @@ cto_metadata <- function(req, which = c("all", "datasets", "forms", "groups")) {
   else invisible(metadata[[which]])
 }
 
+#' @export
+#' @rdname cto_metadata
+cto_form_ids <- function(req) {
+  assert_class(req, c("httr2_request", "scto_request"))
+  req |>
+    req_url_path("api/v2/forms/ids") |>
+    req_perform() |>
+    resp_body_json(simplifyVector = TRUE)
+}

@@ -2,9 +2,12 @@
 % Please edit documentation in R/cto_metadata.R
 \name{cto_metadata}
 \alias{cto_metadata}
+\alias{cto_form_ids}
 \title{Retrieve Metadata from a SurveyCTO Server}
 \usage{
 cto_metadata(req, which = c("all", "datasets", "forms", "groups"))
+
+cto_form_ids(req)
 }
 \arguments{
 \item{req}{A \code{httr2_request} object initialized via \code{\link{cto_request}()}.}
@@ -19,20 +22,24 @@ One of:
 }}
 }
 \value{
-An object containing the requested metadata.
+\code{cto_form_ids} returns a vector of form IDs, and \code{cto_metadata} returns an
+object containing the requested metadata.
 \itemize{
 \item If \code{which = "all"}, returns a named list.
 \item Otherwise, returns the specific \code{data.frame} requested.
 }
 }
 \description{
-This function connects to the SurveyCTO console to retrieve structural metadata
-regarding forms, groups, and datasets available on the server.
+This function retrieves structural metadata regarding forms, groups, and
+datasets available on the server.
 }
 \examples{
 \dontrun{
 # Authenticate first
 req <- cto_request("myserver", "myuser")
+
+# Available form IDs
+ids <- cto_form_ids(req)
 
 # Get all metadata
 meta <- cto_metadata(req)

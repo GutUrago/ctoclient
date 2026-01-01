@@ -117,8 +117,6 @@ cto_fetch_attachment <- function(
   }
   paths <- file.path(path, basename(urls))
 
-  n_total <- length(urls)
-
   if (verbose) {
     pb <- list(
       type = "download",

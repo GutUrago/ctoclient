@@ -8,19 +8,17 @@
 NULL
 
 
-# Confirm Form ID ----
-cto_form_ids <- function(req, team_id = NULL) {
+# List all datasets (Paginated) ----
+cto_datasets <- function(req) {
   verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
   assert_class(req, c("httr2_request", "scto_request"))
-  if (!is.null(team_id)) assert_character(team_id)
-  endpoint <- req |>
-    req_url_path("/api/v2/forms/ids")
-  if (!is.null(team_id)) endpoint <- req_url_query(endpoint, teamId = team_id)
-  req_perform(endpoint) |>
+  resp <- req |>
+    req_url_path("api/v2/datasets") |>
+    req_url_query(limit = 1000) |>
+    req_perform() |>
     resp_body_json(simplifyVector = TRUE)
+  resp$data
 }
-
-
 
 # Center text -----
 center_text <- function(text, fill = " ", width = 78) {
