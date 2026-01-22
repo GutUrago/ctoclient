@@ -7,7 +7,8 @@
 #' @importFrom tidyr matches all_of any_of everything
 NULL
 
-
+# Environment to store ----
+.cto_env <- new.env(parent = emptyenv())
 
 # Fetch API response ----
 fetch_api_response <- function(req, url_path = NULL, file_path = NULL) {

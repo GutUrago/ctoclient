@@ -58,7 +58,7 @@ cto_request <- function(server, username, password = NULL) {
   req <- httr2::request(base_url) |>
     httr2::req_user_agent("scto package in R") |>
     httr2::req_auth_basic(username, password) |>
-    httr2::req_retry(max_tries = 3) |>
+    httr2::req_throttle(capacity = 30, fill_time_s = 60) |>
     httr2::req_cookie_preserve(cookie_jar) |>
     httr2::req_error(body = cto_error_body)
 
@@ -73,6 +73,8 @@ cto_request <- function(server, username, password = NULL) {
   }
 
   req[["server"]] <- server
+  assign(".req", req, envir = .cto_env)
+  assign(".server", server, envir = .cto_env)
   class(req) <- c(class(req), "scto_request")
   if (verbose) cli_progress_step("Access granted!")
   return(req)

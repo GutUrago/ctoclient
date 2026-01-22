@@ -1,6 +1,6 @@
-Package: scto
+Package: ctoclient
 Type: Package
-Title: Modern Data Pipelines for 'SurveyCTO'
+Title: A Modern and Flexible Data Pipelines for 'SurveyCTO'
 Version: 0.0.0.9000
 Date: 2026-01-13
 Authors@R: c(
@@ -15,8 +15,7 @@ Description: An R client for the 'SurveyCTO' REST API <https://developer.surveyc
     a mobile and offline data collection platform, providing a modern and consistent interface for 
     programmatic access to server resources. Built on top of the 'httr2' package, 
     it enables secure and efficient data retrieval and returns analysis-ready 
-    outputs through optional tidying. The package also generates clean variable 
-    and value labels compatible with 'Stata'. Additional functionality includes 
+    data through optional tidying. Additional functionality includes 
     downloading server datasets, form metadata and definitions, and associated attachments. 
     Robust authentication and request handling make the package suitable for 
     automated survey monitoring and downstream analysis.
@@ -40,7 +39,7 @@ Suggests:
     curl,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-URL: https://github.com/guturago/scto
-BugReports: https://github.com/guturago/scto/issues
+URL: https://github.com/guturago/ctoclient
+BugReports: https://github.com/guturago/ctoclient/issues
 Depends: 
     R (>= 4.1.0)

@@ -67,11 +67,13 @@ cto_form_data_attachment <- function(req, form_id, fields = everything(),
 
   df <- cto_form_data(req, form_id, private_key = private_key, tidy = FALSE)
 
-  urls <- select(df, {{ fields }}) |>
-    mutate(across(everything(), as.character)) |>
-    tidyr::pivot_longer(everything()) |>
-    dplyr::filter(grepl(rgx, .data$value)) |>
-    dplyr::pull("value")
+  urls <- df |>
+    dplyr::select({{ fields }}) |>
+    dplyr::select(dplyr::where(is.character)) |>
+    dplyr::select(dplyr::where(~ any(grepl(rgx, .x), na.rm = TRUE))) |>
+    unlist(use.names = FALSE)
+
+  urls <- urls[grepl(rgx, urls)]
 
   file_paths <- file.path(dir, basename(urls))
   to_download <- if (overwrite) rep(TRUE, length(urls)) else !file.exists(file_paths)
