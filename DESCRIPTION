@@ -1,6 +1,6 @@
 Package: ctoclient
 Type: Package
-Title: A Modern and Flexible Data Pipelines for 'SurveyCTO'
+Title: A Modern and Flexible Data Pipeline for 'SurveyCTO'
 Version: 0.0.0.9000
 Date: 2026-01-13
 Authors@R: c(
@@ -11,7 +11,7 @@ Authors@R: c(
       comment = c(ORCID = "0000-0001-5588-2301")
     )
   )
-Description: An R client for the 'SurveyCTO' REST API <https://developer.surveycto.com/>, 
+Description: A modern and flexible R client for the 'SurveyCTO' REST API <https://developer.surveycto.com/>, 
     a mobile and offline data collection platform, providing a modern and consistent interface for 
     programmatic access to server resources. Built on top of the 'httr2' package, 
     it enables secure and efficient data retrieval and returns analysis-ready 
@@ -37,6 +37,7 @@ Imports:
     tidyr
 Suggests: 
     curl,
+    jsonlite,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 URL: https://github.com/guturago/ctoclient

@@ -1,66 +1,67 @@
 
 
-#' Download and Process SurveyCTO Data
+#' Download and Tidy SurveyCTO Form Data
 #'
-#' Downloads data from a SurveyCTO server in wide JSON format. It supports
-#' encrypted forms via a private key and offers an automated "tidy" mode that
-#' cleans column types based on the XLSForm definition.
+#' @description
+#' Downloads submission data from a SurveyCTO server in wide JSON format.
+#' Encrypted forms are supported via a private key. When `tidy = TRUE`
+#' (default), the function uses the form's XLSForm definition to convert
+#' variables to appropriate R types, drop structural fields, and organize
+#' columns for analysis.
 #'
-#' @param req A `httr2_request` object initialized via [cto_request()].
-#' @param form_id String. The unique ID of the SurveyCTO form.
+#' @param form_id A string specifying the SurveyCTO form ID.
 #' @param private_key An optional path to a `.pem` private key file. Required
 #'   if the form is encrypted.
-#' @param start_date A `POSIXct` object. Only submissions received after
-#'   this date/time will be downloaded. Defaults to "2000-01-01".
+#' @param start_date A POSIXct timestamp. Only submissions received after
+#'   this date/time are requested. Defaults to `"2000-01-01"`.
 #' @param status A character vector of submission statuses to include.
-#'   Options are "approved", "rejected", and "pending". Defaults to all three.
-#' @param tidy Logical. If `TRUE`, the function fetches the form's XLSForm
-#'   definition and automatically converts columns to their correct types
-#'   (numeric, date, datetime), order variables and removes structural fields (groups/notes).
-#'
-#'
-#' @returns A `data.frame`. If `tidy = FALSE`, returns the raw data obtained from
-#' returned JSON object. If `tidy = TRUE`, returns a cleaned data with optimized types
-#' and column ordering.
+#'   Must be a subset of `"approved"`, `"rejected"`, and `"pending"`.
+#'   Defaults to all three.
+#' @param tidy Logical; if `TRUE`, attempts to clean and restructure the raw
+#'   SurveyCTO output using the XLSForm definition.
 #'
 #' @details
-#' When `tidy = TRUE`, this function simplifies the transition from data
-#' collection to data analysis by automatically handling common SurveyCTO
-#' formatting tasks:
+#' When `tidy = TRUE`, the function performs several common post-processing
+#' steps:
+#'
 #' \itemize{
-#'   \item **Data Type Correction:** Converts text-based numbers, dates,
-#'     and timestamps into actual R numeric and date objects. It leverages
-#'      \code{\link[readr]{parse_guess}()}, which uses a number of heuristics to
-#'      determine which type of vector is "best".
-#'   \item **Structural Cleanup:** Removes "administrative" rows and columns
-#'     used only for form layout, such as notes, group headers, and repeat markers.
-#'   \item **Column Organization:** Reorders columns so that key metadata
-#'     (like submission dates) appears first, followed by survey questions
-#'     in their original order.
-#'   \item **Media Handling:** Cleans links for images, audio, or video files
-#'     to show just the filename, making it easier to reference attachments.
-#'     \item **Geopoint Splitting:** Splits geopoint fields into four variables,
-#'     with _latitude, _longitude, _altitude and _accuracy suffixes.
+#'   \item **Type conversion:** Converts numeric, date, and datetime fields
+#'   to native R types based on question types in the XLSForm.
+#'   \item **Structural cleanup:** Removes layout-only fields such as notes,
+#'   group markers, and repeat delimiters.
+#'   \item **Column ordering:** Places key submission metadata (for example,
+#'   completion and submission dates) first, followed by survey variables
+#'   in form order.
+#'   \item **Media fields:** Strips URLs from image, audio, and video fields,
+#'   leaving only the filename.
+#'   \item **Geopoints:** Splits geopoint variables into four columns with
+#'   `_latitude`, `_longitude`, `_altitude`, and `_accuracy` suffixes when
+#'   not already present.
 #' }
+#'
+#' @return
+#' A `data.frame` containing the downloaded submissions.
+#'
+#' If `tidy = FALSE`, the raw parsed JSON response is returned.
+#' If `tidy = TRUE`, a cleaned version with standardized column types and
+#' ordering is returned.
+#'
+#' Returns an empty `data.frame` when no submissions are available.
+#'
+#' @family Form Management Functions
 #'
 #' @export
 #'
-#' @seealso [cto_request()], [cto_form_attachment()]
-#'
-#'
 #' @examples
 #' \dontrun{
-#' # Basic request
-#' req <- cto_request("my_server", "user", "pass")
-#'
-#' # Download raw data
-#' raw <- cto_form_data(req, "my_form_id")
+#' # Download raw submissions
+#' raw <- cto_form_data("my_form_id", tidy = FALSE)
 #'
 #' # Download and tidy encrypted data
-#' clean <- cto_form_data(req, "my_form_id", "keys/my_key.pem")
+#' clean <- cto_form_data("my_form_id", private_key = "keys/my_key.pem")
 #' }
+
 cto_form_data <- function(
-    req,
     form_id,
     private_key = NULL,
     start_date = as.POSIXct("2000-01-01"),
@@ -68,35 +69,39 @@ cto_form_data <- function(
     tidy = TRUE
     ) {
 
-  verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
+  verbose <- get_verbose()
 
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  checkmate::assert_string(form_id)
+  assert_form_id(form_id)
   if (!is.null(private_key)) checkmate::assert_file_exists(private_key, "r", "pem")
   checkmate::assert_class(start_date, "POSIXct")
   checkmate::assert_flag(tidy)
 
   status <- match.arg(status, several.ok = TRUE)
   start_date <- as.numeric(start_date)
+  session <- get_session()
 
   url_path <- str_glue("api/v2/forms/data/wide/json/{form_id}")
-  req_data <- req_url_query(req, date = start_date, r = status, .multi = "pipe")
+  session <- req_url_query(session, date = start_date, r = status, .multi = "pipe")
 
   if (!is.null(private_key)) {
-    req_data <- httr2::req_body_multipart(req_data, private_key = curl::form_file(private_key))
+    session <- httr2::req_body_multipart(session, private_key = curl::form_file(private_key))
   }
 
-  if (verbose) cli_progress_step("Fetching {.val {form_id}} data")
-  raw_data <- fetch_api_response(req_data, url_path)
+  if (verbose) cli_progress_step(
+    "Fetching {col_blue(form_id)} form data",
+    "Fetched {col_blue(form_id)} form data"
+    )
+  raw_data <- fetch_api_response(session, url_path)
 
-  if (length(raw_data) == 0) return(data.frame())
+  if (length(raw_data) == 0 || !tidy) return(raw_data)
 
-  if (!tidy) return(raw_data)
+  if (verbose) cli_progress_step(
+    "Tidying {col_blue(form_id)} form data",
+    "Tidied {col_blue(form_id)} form data"
+    )
 
-  if (verbose) cli_progress_step("Tidying {.val {form_id}} data")
-  form <- cto_form_definition(req, form_id)
-
-  survey <- form$survey |>
+  fp <- cto_form_definition(form_id, dir = tempdir(), overwrite = TRUE)
+  survey <- readxl::read_excel(fp, sheet = "survey") |>
     mutate(
       type = str_squish(.data$type),
       name = str_squish(.data$name),

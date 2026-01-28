@@ -2,46 +2,64 @@
 % Please edit documentation in R/cto_form_dofile.R
 \name{cto_form_dofile}
 \alias{cto_form_dofile}
-\title{Generate Stata Variable and Value Labels from SurveyCTO Form Definitions}
+\title{Generate a Stata Do-File with Variable and Value Labels from a SurveyCTO Form}
 \usage{
-cto_form_dofile(req, form_id, path = NULL)
+cto_form_dofile(form_id, path = NULL)
 }
 \arguments{
-\item{req}{A \code{httr2_request} object initialized via \code{\link[=cto_request]{cto_request()}}.}
+\item{form_id}{A character string specifying the SurveyCTO form ID.}
 
-\item{form_id}{Character string. The unique ID of the SurveyCTO form.}
-
-\item{path}{Character (optional). The file path where the resulting \code{.do}
-file should be saved. Must end in \code{.do}.}
+\item{path}{Optional character string giving the output file path for the
+generated \code{.do} file. Must end in \code{.do}. If \code{NULL}, the file is not written
+to disk and the generated commands are returned invisibly.}
 }
 \value{
-A character vector containing the lines of the generated Stata \code{.do}
-file, returned invisibly.
+A character vector containing the lines of the generated Stata \code{.do} file.
+The value is returned invisibly.
 }
 \description{
-This function automates the creation of a Stata \code{.do} file that applies
-variable labels, value labels, and notes to a dataset. It parses the
-XLSForm structure from SurveyCTO, handles multi-language forms, and
-accounts for complex structures like repeat groups and select-multiple fields.
+Creates a Stata \code{.do} file that applies variable labels, value labels, and
+notes to a dataset based on the XLSForm definition of a SurveyCTO form.
+The function supports multi-language forms, repeat groups, and
+\code{select_multiple} questions, and generates Stata-compatible regular
+expressions so labels are applied to all indexed variables.
 }
 \details{
-The function performs several cleaning and transformation steps:
+The function performs several processing steps:
+
 \itemize{
-\item \strong{Language Detection:} Automatically selects the default
-language labels or falls back to English if no default is specified.
-\item \strong{Value Labels:} Creates Stata \verb{label define} commands for
-all \code{select_one} and \code{select_multiple} choice lists.
-\item \strong{Regex Mapping:} For variables inside repeat groups, the
-function generates Stata-compatible regex patterns to ensure labels
-are applied to all indexed versions (e.g., \code{var_1}, \code{var_2}).
-\item \strong{Label Cleaning:} Removes HTML tags, escapes special Stata
-characters, and handles dynamic SurveyCTO string interpolation (e.g., \verb{$\{var\}}).
+\item \strong{Language selection:} Automatically chooses the default
+language defined in the XLSForm, or falls back to English when multiple
+label columns are present.
+\item \strong{Value labels:} Generates Stata \verb{label define} commands for
+all \code{select_one} choice lists and a binary label set for
+\code{select_multiple} variables.
+\item \strong{Repeat handling:} For variables inside repeat groups,
+Stata loops and regex matching are created so labels apply to all indexed
+copies (for example, \code{child_age_1}, \code{child_age_2}).
+\item \strong{Select-multiple expansion:} Produces conditional labeling
+logic for binary indicator variables derived from
+\code{select_multiple} questions.
+\item \strong{Label cleaning:} Removes HTML markup, escapes Stata-special
+characters, normalizes whitespace, and preserves SurveyCTO interpolation
+strings such as \verb{$\{var\}}.
 }
 }
 \examples{
 \dontrun{
-# Authenticate and generate labels
-req <- cto_request("my_server", "username", "password")
-cto_form_dofile(req, "household_survey", path = "labels.do")
+# Generate a Stata do-file and write it to disk
+cto_form_dofile("household_survey", path = "labels.do")
+
+# Generate without writing to a file
+cmds <- cto_form_dofile("household_survey")
 }
 }
+\seealso{
+Other Form Management Functions: 
+\code{\link{cto_form_attachment}()},
+\code{\link{cto_form_data}()},
+\code{\link{cto_form_data_attachment}()},
+\code{\link{cto_form_languages}()},
+\code{\link{cto_form_metadata}()}
+}
+\concept{Form Management Functions}

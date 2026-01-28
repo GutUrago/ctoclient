@@ -1,17 +1,21 @@
-citHeader("To cite scto in publications, please use:")
+citHeader("To cite ctoclient in publications, please use:")
 
 
 year <- sub("-.*", "", meta$Date)
 note <- sprintf("R package version %s", meta$Version)
 bibentry(
   bibtype = "Manual",
-  key     = "rscto",
-  title   = "scto: Modern Data Pipelines for SurveyCTO in R",
+  key     = "ctoclient",
+  title   = "ctoclient: A Modern and Flexible Data Pipeline for SurveyCTO in R",
   author  = person("Gutama Girja", "Urago"),
   year    = year,
   note    = note,
   doi     = "10.5281/zenodo.15262092",
-  url     = "https://guturago.github.io/scto/",
-  textVersion = paste0("Urago, G. G. (", year, "). scto: Modern Data Pipelines for SurveyCTO in R. ", note,
-                              ". doi:10.5281/zenodo.15262092. https://guturago.github.io/scto/.")
+  url     = "https://guturago.github.io/ctoclient/",
+  textVersion = paste0(
+            "Urago, G. G. (",
+            year,
+            "). ctoclient: A Modern and Flexible Data Pipeline for SurveyCTO in R. ",
+            note,
+            ". doi:10.5281/zenodo.15262092. https://guturago.github.io/ctoclient/.")
 )

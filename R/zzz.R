@@ -1,5 +1,5 @@
 
-#' @importFrom cli cli_abort cli_warn cli_inform cli_progress_step
+#' @importFrom cli cli_abort cli_warn cli_inform col_blue cli_progress_step
 #' @importFrom stringr str_c str_glue str_extract str_squish str_replace_all str_remove_all
 #' @importFrom httr2 req_url req_url_path req_url_query req_perform resp_body_json resp_body_raw
 #' @importFrom rlang `:=` .data
@@ -8,13 +8,56 @@
 NULL
 
 # Environment to store ----
-.cto_env <- new.env(parent = emptyenv())
+.ctoclient_env <- new.env(parent = emptyenv())
+
+# Get session ----
+get_session <- function() {
+  if (!cto_is_connected()) {
+    cli_abort(c(
+      x = "No active SurveyCTO session found.",
+      i = "Please connect first using {.run ctoclient::cto_connect()}.",
+      i = "Or set connection using {.run ctoclient::cto_set_connection()}."
+    ))
+  } else {
+    session <- get(".session", envir = .ctoclient_env)
+    if (!inherits(session, "cto_session")) {
+      cli_abort("Invalid session found. Please reconnect using {.run ctoclient::cto_connect()}.")
+    }
+    return(session)
+  }
+}
+
+# Get verbose ----
+get_verbose <- function() isTRUE(getOption("ctoclient.verbose", TRUE))
+
+# Drop NULL list ----
+drop_nulls_recursive <- function(x) {
+  if (!is.list(x)) return(x)
+  x <- lapply(x, drop_nulls_recursive)
+  Filter(function(z) !is.null(z) && !(is.list(z) && length(z) == 0), x)
+}
+
+
+# Assert form IDs ----
+assert_form_id <- function(form_id) {
+  checkmate::assert_string(form_id)
+  form_ids <- fetch_api_response(get_session(), "api/v2/forms/ids")
+  if (!(form_id %in% form_ids)) {
+    cli_abort(c(
+      x = "There is no form with {.val {form_id}} ID",
+      i = "Use {.run ctoclient::cto_form_ids()} to see available form IDs"))
+  }
+  invisible(TRUE)
+}
+
 
 # Fetch API response ----
 fetch_api_response <- function(req, url_path = NULL, file_path = NULL) {
+
   if (!is.null(url_path)) {
     req <- req_url_path(req, url_path)
   }
+
   if (is.null(file_path)) {
     req_perform(req) |>
       resp_body_json(
@@ -22,17 +65,24 @@ fetch_api_response <- function(req, url_path = NULL, file_path = NULL) {
         flatten = TRUE
       )
   } else {
-    req_perform(req, file_path)
+    req_perform(req) |>
+      httr2::resp_body_raw() |>
+      writeBin(file_path)
   }
 }
 
-
-# Map and return the simplest object ----
-map_maybe_list <- function(.x, .f, ..., .names = NULL) {
-  res <- purrr::map(.x, .f, ...)
-  out <- if (length(res) == 1) res[[1]] else res
-  if (!is.null(.names) && length(res) > 1) names(out) <- .names
-  out
+# Fetch paginated json ----
+fetch_paginated_response <- function(req, path, field = "data") {
+  resp <- fetch_api_response(req, path)
+  out <- purrr::pluck(resp, field)
+  cursor <- purrr::pluck(resp, "nextCursor")
+  while (!is.null(cursor)) {
+    req <- req_url_query(req, cursor = cursor)
+    resp <- fetch_api_response(req, path)
+    out <- dplyr::bind_rows(out, purrr::pluck(resp, field))
+    cursor <- purrr::pluck(resp, "nextCursor")
+  }
+  return(out)
 }
 
 # Center text -----

@@ -2,10 +2,9 @@
 % Please edit documentation in R/cto_form_data.R
 \name{cto_form_data}
 \alias{cto_form_data}
-\title{Download and Process SurveyCTO Data}
+\title{Download and Tidy SurveyCTO Form Data}
 \usage{
 cto_form_data(
-  req,
   form_id,
   private_key = NULL,
   start_date = as.POSIXct("2000-01-01"),
@@ -14,65 +13,71 @@ cto_form_data(
 )
 }
 \arguments{
-\item{req}{A \code{httr2_request} object initialized via \code{\link[=cto_request]{cto_request()}}.}
-
-\item{form_id}{String. The unique ID of the SurveyCTO form.}
+\item{form_id}{A string specifying the SurveyCTO form ID.}
 
 \item{private_key}{An optional path to a \code{.pem} private key file. Required
 if the form is encrypted.}
 
-\item{start_date}{A \code{POSIXct} object. Only submissions received after
-this date/time will be downloaded. Defaults to "2000-01-01".}
+\item{start_date}{A POSIXct timestamp. Only submissions received after
+this date/time are requested. Defaults to \code{"2000-01-01"}.}
 
 \item{status}{A character vector of submission statuses to include.
-Options are "approved", "rejected", and "pending". Defaults to all three.}
+Must be a subset of \code{"approved"}, \code{"rejected"}, and \code{"pending"}.
+Defaults to all three.}
 
-\item{tidy}{Logical. If \code{TRUE}, the function fetches the form's XLSForm
-definition and automatically converts columns to their correct types
-(numeric, date, datetime), order variables and removes structural fields (groups/notes).}
+\item{tidy}{Logical; if \code{TRUE}, attempts to clean and restructure the raw
+SurveyCTO output using the XLSForm definition.}
 }
 \value{
-A \code{data.frame}. If \code{tidy = FALSE}, returns the raw data obtained from
-returned JSON object. If \code{tidy = TRUE}, returns a cleaned data with optimized types
-and column ordering.
+A \code{data.frame} containing the downloaded submissions.
+
+If \code{tidy = FALSE}, the raw parsed JSON response is returned.
+If \code{tidy = TRUE}, a cleaned version with standardized column types and
+ordering is returned.
+
+Returns an empty \code{data.frame} when no submissions are available.
 }
 \description{
-Downloads data from a SurveyCTO server in wide JSON format. It supports
-encrypted forms via a private key and offers an automated "tidy" mode that
-cleans column types based on the XLSForm definition.
+Downloads submission data from a SurveyCTO server in wide JSON format.
+Encrypted forms are supported via a private key. When \code{tidy = TRUE}
+(default), the function uses the form's XLSForm definition to convert
+variables to appropriate R types, drop structural fields, and organize
+columns for analysis.
 }
 \details{
-When \code{tidy = TRUE}, this function simplifies the transition from data
-collection to data analysis by automatically handling common SurveyCTO
-formatting tasks:
+When \code{tidy = TRUE}, the function performs several common post-processing
+steps:
+
 \itemize{
-\item \strong{Data Type Correction:} Converts text-based numbers, dates,
-and timestamps into actual R numeric and date objects. It leverages
-\code{\link[readr]{parse_guess}()}, which uses a number of heuristics to
-determine which type of vector is "best".
-\item \strong{Structural Cleanup:} Removes "administrative" rows and columns
-used only for form layout, such as notes, group headers, and repeat markers.
-\item \strong{Column Organization:} Reorders columns so that key metadata
-(like submission dates) appears first, followed by survey questions
-in their original order.
-\item \strong{Media Handling:} Cleans links for images, audio, or video files
-to show just the filename, making it easier to reference attachments.
-\item \strong{Geopoint Splitting:} Splits geopoint fields into four variables,
-with _latitude, _longitude, _altitude and _accuracy suffixes.
+\item \strong{Type conversion:} Converts numeric, date, and datetime fields
+to native R types based on question types in the XLSForm.
+\item \strong{Structural cleanup:} Removes layout-only fields such as notes,
+group markers, and repeat delimiters.
+\item \strong{Column ordering:} Places key submission metadata (for example,
+completion and submission dates) first, followed by survey variables
+in form order.
+\item \strong{Media fields:} Strips URLs from image, audio, and video fields,
+leaving only the filename.
+\item \strong{Geopoints:} Splits geopoint variables into four columns with
+\verb{_latitude}, \verb{_longitude}, \verb{_altitude}, and \verb{_accuracy} suffixes when
+not already present.
 }
 }
 \examples{
 \dontrun{
-# Basic request
-req <- cto_request("my_server", "user", "pass")
-
-# Download raw data
-raw <- cto_form_data(req, "my_form_id")
+# Download raw submissions
+raw <- cto_form_data("my_form_id", tidy = FALSE)
 
 # Download and tidy encrypted data
-clean <- cto_form_data(req, "my_form_id", "keys/my_key.pem")
+clean <- cto_form_data("my_form_id", private_key = "keys/my_key.pem")
 }
 }
 \seealso{
-\code{\link[=cto_request]{cto_request()}}, \code{\link[=cto_form_attachment]{cto_form_attachment()}}
+Other Form Management Functions: 
+\code{\link{cto_form_attachment}()},
+\code{\link{cto_form_data_attachment}()},
+\code{\link{cto_form_dofile}()},
+\code{\link{cto_form_languages}()},
+\code{\link{cto_form_metadata}()}
 }
+\concept{Form Management Functions}

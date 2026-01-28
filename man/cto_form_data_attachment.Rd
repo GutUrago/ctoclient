@@ -5,17 +5,14 @@
 \title{Download Attachments from SurveyCTO Form Data}
 \usage{
 cto_form_data_attachment(
-  req,
   form_id,
   fields = everything(),
   private_key = NULL,
-  dir = "media",
+  dir = file.path(getwd(), "media"),
   overwrite = FALSE
 )
 }
 \arguments{
-\item{req}{A \code{httr2_request} object initialized via \code{\link[=cto_request]{cto_request()}}.}
-
 \item{form_id}{A string specifying the SurveyCTO form ID to inspect.}
 
 \item{fields}{A \code{tidy-select} expression (e.g., \code{everything()}, \code{starts_with("img_")})
@@ -50,21 +47,14 @@ attachment URL pattern.
 }
 \examples{
 \dontrun{
-library(httr2)
-
-# 1. Create an authenticated request
-req <- cto_request("my_server", "username")
-
-# 2. Download all attachments from a form
+# 1. Download all attachments from the form submissions
 cto_form_data_attachment(
-  req = req,
   form_id = "household_survey_v1",
-  dir = "downloads/photos"
+  dir = "downloads/medias"
 )
 
-# 3. Download only specific image fields from an encrypted form
+# 2. Download only specific image fields from an encrypted form
 cto_form_data_attachment(
-  req = req,
   form_id = "encrypted_health_survey",
   fields = starts_with("image_"),
   private_key = "keys/my_priv_key.pem",
@@ -73,7 +63,11 @@ cto_form_data_attachment(
 }
 }
 \seealso{
-\code{\link[=cto_form_data]{cto_form_data()}} for the underlying data retrieval.
-
-\code{\link[httr2:req_perform_sequential]{httr2::req_perform_sequential()}} for the download mechanism.
+Other Form Management Functions: 
+\code{\link{cto_form_attachment}()},
+\code{\link{cto_form_data}()},
+\code{\link{cto_form_dofile}()},
+\code{\link{cto_form_languages}()},
+\code{\link{cto_form_metadata}()}
 }
+\concept{Form Management Functions}

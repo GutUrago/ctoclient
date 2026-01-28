@@ -7,92 +7,81 @@
 #'
 #' * `cto_form_metadata()` retrieves raw metadata for a form, including
 #'   available definition files, version identifiers, and download URLs.
-#' * `cto_form_definition()` downloads the specific XLSForm definition (Excel file)
-#'   and optionally parses it into R data frames.
+#' * `cto_form_definition()` downloads a specific XLSForm definition (Excel file)
+#'   to a local directory.
 #'
-#' @param req A `httr2_request` object created with [cto_request()].
 #' @param form_id A string giving the unique SurveyCTO form ID.
-#' @param version Optional string specifying a particular form version
-#'   to download. If `NULL` (default), the currently deployed version is used.
-#' @param load Logical; if `TRUE` (the default), the downloaded XLSForm
-#'   is read into R as a list of tibbles (survey, choices, settings).
-#'   If `FALSE`, the function returns the file path to the downloaded Excel file.
-#' @param dir A directory where the XLSForm definition file should be saved.
-#'   Defaults to [tempdir()].
+#' @param version Optional string specifying a particular form version to download.
+#'   If `NULL` (default), the currently deployed version is used.
+#' @param dir Directory where the XLSForm should be saved. Defaults to `getwd()`.
 #' @param overwrite Logical; if `TRUE`, an existing file in `dir` will be
-#'   overwritten. If `FALSE` (the default), the existing file is used.
+#'   overwritten. If `FALSE` (default), the existing file is used.
 #'
 #' @return
-#' **`cto_form_metadata()`** returns a list containing the raw JSON metadata,
-#' including keys for `deployedGroupFiles` and `previousDefinitionFiles`.
-#'
-#' **`cto_form_definition()`**:
-#' * If `load = TRUE`: Returns a named list of three tibbles (`survey`, `choices`, `settings`).
-#' * If `load = FALSE`: Returns a character string containing the file path.
+#' * `cto_form_metadata()` returns a list containing the metadata, including
+#'   keys for `deployedGroupFiles` and `previousDefinitionFiles`.
+#' * `cto_form_definition()` returns a character string with the path to the downloaded Excel file.
 #'
 #' @details
-#' **Version Handling**:
-#' When `version` is supplied, the function validates it against the available
-#' form versions returned by `cto_form_metadata()`. An informative error is raised
-#' if the requested version does not exist.
-#'
-#' **Caching**:
-#' If the specific version of the form definition already exists in `dir`,
-#' it will not be re-downloaded unless `overwrite = TRUE`.
+#' * **Version Handling:** When `version` is supplied, it is validated against
+#'   the available versions from `cto_form_metadata()`. An informative error is raised
+#'   if the requested version does not exist.
+#' * **Caching:** If the file already exists in `dir`, it will not be re-downloaded
+#'   unless `overwrite = TRUE`.
 #'
 #' @export
 #'
-#' @seealso
-#' [cto_metadata()] for general server-level metadata.
+#' @family Form Management Functions
 #'
 #' @examples
 #' \dontrun{
-#' req <- cto_request("my-org", "user@org.com")
+#' # --- 1. Get raw metadata ---
+#' meta <- cto_form_metadata("household_survey")
 #'
-#' # 1. Get raw metadata
-#' meta <- cto_form_metadata(req, "household_survey")
+#' # --- 2. Download the current form definition ---
+#' file_path <- cto_form_definition("household_survey")
 #'
-#' # 2. Download and read the current form definition
-#' form_def <- cto_form_definition(req, "household_survey")
-#' head(form_def$survey)
-#'
-#' # 3. Download a specific historical version (don't read)
-#' file_path <- cto_form_definition(
-#'    req,
-#'    "household_survey",
-#'    version = "20231001",
-#'    load = FALSE
+#' # --- 3. Download a specific historical version ---
+#' file_path_v <- cto_form_definition(
+#'   "household_survey",
+#'   version = "20231001"
 #' )
+#'
+#' # --- 4. Read XLSForm manually with readxl ---
+#' library(readxl)
+#' survey <- read_excel(file_path, sheet = "survey")
+#' choices <- read_excel(file_path, sheet = "choices")
+#' settings <- read_excel(file_path, sheet = "settings")
 #' }
-cto_form_metadata <- function(req, form_id) {
-  verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
-
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  checkmate::assert_string(form_id)
+cto_form_metadata <- function(form_id) {
+  verbose <- get_verbose()
+  session <- get_session()
+  assert_form_id(form_id)
 
   t <- as.numeric(Sys.time()) * 1000
   url_path <- str_glue("forms/{form_id}/files")
-  req <- req_url_query(req, t = t)
+  session <- req_url_query(session, t = t)
 
-  if (verbose) cli_progress_step("Reading {.val {form_id}} metadata")
-  fetch_api_response(req, url_path)
+  if (verbose) cli_progress_step(
+    "Reading {col_blue(form_id)} form metadata",
+    "Read {col_blue(form_id)} form metadata"
+    )
+  fetch_api_response(session, url_path)
 }
 
 
 #' @export
 #' @rdname cto_form_metadata
-cto_form_definition <- function(req, form_id, version = NULL, load = TRUE,
-                                dir = tempdir(), overwrite = FALSE) {
-  verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
+cto_form_definition <- function(form_id, version = NULL,
+                                dir = getwd(), overwrite = FALSE) {
+  verbose <- get_verbose()
+  session <- get_session()
 
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  checkmate::assert_string(form_id)
   checkmate::assert_string(version, null.ok = TRUE)
-  checkmate::assert_flag(load)
   checkmate::assert_directory(dir)
   checkmate::assert_flag(overwrite)
 
-  metadata <- cto_form_metadata(req, form_id)
+  metadata <- cto_form_metadata(form_id)
   df_versions <- dplyr::bind_rows(
     purrr::pluck(metadata, "deployedGroupFiles", "definitionFile"),
     purrr::pluck(metadata, "previousDefinitionFiles")
@@ -102,8 +91,8 @@ cto_form_definition <- function(req, form_id, version = NULL, load = TRUE,
     df <- dplyr::filter(df_versions, .data$formVersion == version)
     if (nrow(df) == 0 && nrow(df_versions) > 0) {
       cli_abort(c(
-        "x" = "{.val {form_id}} doesn't have the specified form version: {.val {version}}",
-        "i" = "Use {.fn cto_form_metadata} to see available form versions."
+        "x" = "{col_blue(form_id)} doesn't have the specified form version: {.val {version}}",
+        "i" = "Use {.run ctoclient::cto_form_metadata()} to see available form versions"
         ))
     }
   } else {
@@ -111,18 +100,15 @@ cto_form_definition <- function(req, form_id, version = NULL, load = TRUE,
     version <- df$formVersion[1]
     }
 
-  filename <- file.path(dir, df$filename[1])
-  if (!file.exists(filename) || overwrite) {
+  file_path <- file.path(dir, df$filename[1])
+  if (!file.exists(file_path) || overwrite) {
     url <- df$downloadLink[1]
     if (verbose) cli_progress_step("Downloading form definition version {.val {version}}")
-    fetch_api_response(req_url(req, url), file_path = filename)
+    fetch_api_response(req_url(session, url), file_path = file_path)
+  } else {
+    cli_inform(c(v = "{.val {basename(file_path)}} already exist in the directory"))
   }
 
-  if (load && file.exists(filename)) {
-    if (verbose) cli_progress_step("Loading form definition into memory")
-    sheets <- c("survey", "choices", "settings")
-    form_out <- purrr::map(sheets, ~readxl::read_excel(filename, .x, .name_repair = "minimal"))
-    names(form_out) <- sheets
-    return(form_out)
-  } else filename
+  invisible(file_path)
+
 }

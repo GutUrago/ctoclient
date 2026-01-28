@@ -1,51 +1,70 @@
 
 
 
-#' Generate Stata Variable and Value Labels from SurveyCTO Form Definitions
+#' Generate a Stata Do-File with Variable and Value Labels from a SurveyCTO Form
 #'
 #' @description
-#' This function automates the creation of a Stata `.do` file that applies
-#' variable labels, value labels, and notes to a dataset. It parses the
-#' XLSForm structure from SurveyCTO, handles multi-language forms, and
-#' accounts for complex structures like repeat groups and select-multiple fields.
+#' Creates a Stata `.do` file that applies variable labels, value labels, and
+#' notes to a dataset based on the XLSForm definition of a SurveyCTO form.
+#' The function supports multi-language forms, repeat groups, and
+#' `select_multiple` questions, and generates Stata-compatible regular
+#' expressions so labels are applied to all indexed variables.
 #'
-#' @param req A `httr2_request` object initialized via [cto_request()].
-#' @param form_id Character string. The unique ID of the SurveyCTO form.
-#' @param path Character (optional). The file path where the resulting `.do`
-#' file should be saved. Must end in `.do`.
+#' @param form_id A character string specifying the SurveyCTO form ID.
+#' @param path Optional character string giving the output file path for the
+#'   generated `.do` file. Must end in `.do`. If `NULL`, the file is not written
+#'   to disk and the generated commands are returned invisibly.
 #'
 #' @details
-#' The function performs several cleaning and transformation steps:
+#' The function performs several processing steps:
+#'
 #' \itemize{
-#'   \item \strong{Language Detection:} Automatically selects the default
-#'   language labels or falls back to English if no default is specified.
-#'   \item \strong{Value Labels:} Creates Stata `label define` commands for
-#'   all `select_one` and `select_multiple` choice lists.
-#'   \item \strong{Regex Mapping:} For variables inside repeat groups, the
-#'   function generates Stata-compatible regex patterns to ensure labels
-#'   are applied to all indexed versions (e.g., `var_1`, `var_2`).
-#'   \item \strong{Label Cleaning:} Removes HTML tags, escapes special Stata
-#'   characters, and handles dynamic SurveyCTO string interpolation (e.g., `${var}`).
+#'   \item \strong{Language selection:} Automatically chooses the default
+#'   language defined in the XLSForm, or falls back to English when multiple
+#'   label columns are present.
+#'   \item \strong{Value labels:} Generates Stata `label define` commands for
+#'   all `select_one` choice lists and a binary label set for
+#'   `select_multiple` variables.
+#'   \item \strong{Repeat handling:} For variables inside repeat groups,
+#'   Stata loops and regex matching are created so labels apply to all indexed
+#'   copies (for example, `child_age_1`, `child_age_2`).
+#'   \item \strong{Select-multiple expansion:} Produces conditional labeling
+#'   logic for binary indicator variables derived from
+#'   `select_multiple` questions.
+#'   \item \strong{Label cleaning:} Removes HTML markup, escapes Stata-special
+#'   characters, normalizes whitespace, and preserves SurveyCTO interpolation
+#'   strings such as `${var}`.
 #' }
 #'
-#' @return A character vector containing the lines of the generated Stata `.do`
-#' file, returned invisibly.
+#' @return
+#' A character vector containing the lines of the generated Stata `.do` file.
+#' The value is returned invisibly.
+#'
+#' @family Form Management Functions
 #'
 #' @export
 #'
-#'
 #' @examples
 #' \dontrun{
-#' # Authenticate and generate labels
-#' req <- cto_request("my_server", "username", "password")
-#' cto_form_dofile(req, "household_survey", path = "labels.do")
+#' # Generate a Stata do-file and write it to disk
+#' cto_form_dofile("household_survey", path = "labels.do")
+#'
+#' # Generate without writing to a file
+#' cmds <- cto_form_dofile("household_survey")
 #' }
-cto_form_dofile <- function(req, form_id, path = NULL) {
 
-  verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
+cto_form_dofile <- function(form_id, path = NULL) {
+
+  verbose <- get_verbose()
 
   if (!is.null(path)) checkmate::assert_path_for_output(path, TRUE, "do")
-  form <- cto_form_definition(req, form_id)
+
+  fp <- cto_form_definition(form_id, dir = tempdir(), overwrite = TRUE)
+  form <- list(
+    survey = readxl::read_excel(fp, sheet = "survey"),
+    choices = readxl::read_excel(fp, sheet = "choices"),
+    settings = readxl::read_excel(fp, sheet = "settings")
+  )
 
   if (!is.null(path)) {
     cli_progress_step("Writing {.val {form_id}} Stata do-file to {.file {path}}")

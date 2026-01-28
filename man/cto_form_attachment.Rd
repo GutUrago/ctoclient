@@ -2,88 +2,75 @@
 % Please edit documentation in R/cto_form_attachment.R
 \name{cto_form_attachment}
 \alias{cto_form_attachment}
-\title{Download Attachments from SurveyCTO Forms}
+\title{Download Attachments from a SurveyCTO Form}
 \usage{
-cto_form_attachment(
-  req,
-  form_id,
-  filename = NULL,
-  load = TRUE,
-  dir = tempdir(),
-  overwrite = FALSE
-)
+cto_form_attachment(form_id, filename = NULL, dir = getwd(), overwrite = FALSE)
 }
 \arguments{
-\item{req}{A \code{httr2_request} object initialized via \code{\link[=cto_request]{cto_request()}}.}
-
-\item{form_id}{A string specifying the SurveyCTO form ID to inspect.}
+\item{form_id}{A string specifying the SurveyCTO form ID.}
 
 \item{filename}{Optional character vector of specific filenames to download
 (e.g., \code{"prices.csv"}). If \code{NULL} (default), all available attachments
 associated with the form are downloaded.}
 
-\item{load}{Logical; if \code{TRUE} (the default), any downloaded \strong{CSV files} #'   are read into R and returned as a list of data frames. Non-CSV files
-(images, audio) are downloaded but not read. If \code{FALSE}, the function
-returns a character vector of paths to all downloaded files.}
-
-\item{dir}{A string specifying the directory where files will be saved.
-Defaults to \code{\link[=tempdir]{tempdir()}}.}
+\item{dir}{A string giving the directory where files will be saved.
+Defaults to \code{\link[=getwd]{getwd()}}.}
 
 \item{overwrite}{Logical; if \code{TRUE}, existing files in \code{dir} will be
 overwritten. If \code{FALSE} (the default), existing files are skipped.}
 }
 \value{
-\itemize{
-\item If \code{load = TRUE}: A named list of data frames (only for downloaded \code{.csv} files).
-Other file types are saved to disk but not returned in the list.
-\item If \code{load = FALSE}: A character vector of file paths to all downloaded files (invisibly).
-\item Returns \code{invisible(NULL)} if no attachments are found.
-}
+A character vector of file paths to all available attachments that exist
+locally after the function completes (invisibly).
+
+Returns \code{invisible(NULL)} if the form has no attachments.
 }
 \description{
-Downloads files attached to a deployed SurveyCTO form (e.g., pre-loaded
-CSV data, media files, or other server-side attachments).
-
-By default, files are downloaded to a temporary directory and any CSV files
-found are read into memory.
+Downloads files attached to a deployed SurveyCTO form, such as preloaded
+CSV files, media assets, or other server-side attachments.
 }
 \details{
-This function first uses \code{\link[=cto_form_metadata]{cto_form_metadata()}} to retrieve the list of
-"media files" (attachments) associated with the deployed form.
+This function first calls \code{\link[=cto_form_metadata]{cto_form_metadata()}} to retrieve metadata for
+the deployed form, including the list of available attachments.
 \itemize{
-\item \strong{File Types}: You can download any attached file type (images, audio, CSVs).
-However, \code{load = TRUE} will only parse \code{.csv} files.
-\item \strong{Progress}: When \code{options(scto.verbose = TRUE)} (default), a progress
-bar tracks the download status.
+\item \strong{File types}: Any attached file type can be downloaded (for example,
+images, audio, or CSV files).
+\item \strong{Progress reporting}: When \code{options(scto.verbose = TRUE)} (default),
+progress messages are printed using the CLI framework.
 \item \strong{Caching}: Files are not re-downloaded if they already exist in \code{dir}
 unless \code{overwrite = TRUE}.
 }
+
+If all requested files are not available, the function aborts with
+an informative message suggesting how to inspect the form metadata.
 }
 \examples{
 \dontrun{
-req <- cto_request("my_server", "username")
+files <- cto_form_attachment("household_survey")
 
-# 1. Download all attachments; read CSVs into a list
-attachments <- cto_form_attachment(req, "household_survey")
-
-# 2. Download specific files to a local "data" folder
+# 2. Download specific files to a local directory
 cto_form_attachment(
-  req,
   form_id  = "household_survey",
   filename = c("item_list.csv", "logo.png"),
-  dir      = "data/raw",
-  load     = FALSE
+  dir      = "data/raw"
 )
 
-# 3. Force re-download of a specific file
-cto_form_attachment(
-  req,
-  form_id = "household_survey",
+# 3. Force re-download of a file
+p <- cto_form_attachment(
+  form_id  = "household_survey",
   filename = "prices.csv",
   overwrite = TRUE
 )
+
+prices <- read.csv(p)
 }
 }
 \seealso{
-\code{\link[=cto_form_metadata]{cto_form_metadata()}} to inspect available attachments without downloading.
+Other Form Management Functions: 
+\code{\link{cto_form_data}()},
+\code{\link{cto_form_data_attachment}()},
+\code{\link{cto_form_dofile}()},
+\code{\link{cto_form_languages}()},
+\code{\link{cto_form_metadata}()}
 }
+\concept{Form Management Functions}

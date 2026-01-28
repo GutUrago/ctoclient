@@ -1,107 +1,113 @@
 
-#' Download Form Files and Templates
+#' Download SurveyCTO Form Files and Templates
 #'
 #' @description
-#' These functions facilitate the retrieval of form-specific assets and templates from the server.
+#' These functions retrieve auxiliary files and templates associated with a
+#' deployed SurveyCTO form.
 #'
-#' * [cto_form_languages()]: Retrieves the list of languages defined in the form.
-#' * [cto_form_stata_template()]: Downloads a Stata `.do` file template for importing form data.
-#' * [cto_form_printable()]: Downloads a printable (HTML) version of the form definition.
-#' * [cto_form_mail_template()]: Downloads a mail merge template for the form.
+#' * [cto_form_languages()] retrieves the list of languages defined in the form.
+#' * [cto_form_stata_template()] downloads a Stata `.do` file template for
+#'   importing submitted data.
+#' * [cto_form_printable()] downloads a printable (HTML) version of the form
+#'   definition.
+#' * [cto_form_mail_template()] downloads a mail merge template for the form.
 #'
-#' @param req A `httr2_request` object initialized via [cto_request()].
-#' @param form_id Character string. The unique ID of the SurveyCTO form.
-#' @param dir String. The directory where downloaded files will be saved.
-#' Defaults to the current working directory.
-#' @param lang String. The language identifier to be used (e.g., `"English"`).
-#' If `NULL`, the form's default language is used.
-#' @param csv_dir String. The directory where the CSV data file is saved.
-#' This path is embedded into the downloaded Stata do-file to automate data loading.
-#' @param dta_dir String. The directory where the Stata `.dta` dataset should be saved.
-#' @param relevancies Logical. If `TRUE`, includes relevance logic (skip patterns) in
-#' the printable view. Defaults to `FALSE`.
-#' @param constraints Logical. If `TRUE`, includes constraint logic in the printable view.
-#' Defaults to `FALSE`.
-#' @param type Integer (0-2). The format type of the mail merge template.
-#' Defaults to `2`.
-#' * `0`: Field names
-#' * `1`: Field labels
-#' * `2`: Both field names and labels
-#' @param group_names Logical. If `TRUE`, includes group names in the variable headers.
-#' Defaults to `FALSE`.
+#' All downloads are saved locally and their file paths are returned invisibly.
+#'
+#' @param form_id A character string giving the unique SurveyCTO form ID.
+#' @param dir A character string specifying the directory where downloaded files
+#'   will be saved. Defaults to the current working directory.
+#' @param lang Optional character string giving the language identifier
+#'   (for example, `"English"`). If `NULL`, the form's default language is used.
+#' @param csv_dir Optional character string giving the directory where the CSV
+#'   dataset will eventually be stored. This value is embedded in the generated
+#'   Stata `.do` file to automate data loading.
+#' @param dta_dir Optional character string giving the directory where the Stata
+#'   `.dta` file should be written by the template.
+#' @param relevancies Logical; if `TRUE`, relevance logic (skip patterns) is
+#'   included in the printable form. Defaults to `FALSE`.
+#' @param constraints Logical; if `TRUE`, constraint logic is included in the
+#'   printable form. Defaults to `FALSE`.
+#' @param type Integer (0–2) specifying the format of the mail merge template:
+#'   \itemize{
+#'     \item \code{0}: Field names only.
+#'     \item \code{1}: Field labels only.
+#'     \item \code{2}: Both field names and labels.
+#'   }
+#' @param group_names Logical; if `TRUE`, group names are included in variable
+#'   headers. Defaults to `FALSE`.
 #'
 #' @return
-#' * `cto_form_languages()`: A list containing available languages and the default language index.
-#' * All other functions: The local file path of the downloaded file, returned invisibly.
+#' * **`cto_form_languages()`** returns a list containing the available languages
+#'   and the index of the default language (1-based).
+#' * All other functions return the local file path of the downloaded file,
+#'   invisibly.
+#'
+#' @family Form Management Functions
 #'
 #' @examples
 #' \dontrun{
-#' # Authenticate
-#' req <- cto_auth("my_server", "user", "password")
 #' form <- "household_survey"
 #'
-#' # 1. Check available languages
-#' langs <- cto_form_languages(req, form)
+#' # 1. List available form languages
+#' langs <- cto_form_languages(form)
 #' print(langs)
 #'
-#' # 2. Download a Stata template
-#' # We specify where the CSV will eventually be located so the .do file is ready to run
+#' # 2. Download a Stata import template
+#' # Provide future CSV/DTA locations so the .do file is ready to run
 #' cto_form_stata_template(
-#'   req,
 #'   form_id = form,
-#'   dir = "downloads/",
+#'   dir     = "downloads/",
 #'   csv_dir = "C:/Data",
 #'   dta_dir = "C:/Data"
 #' )
 #'
-#' # 3. Download a printable version with logic shown
+#' # 3. Download a printable form with logic displayed
 #' cto_form_printable(
-#'   req,
-#'   form_id = form,
-#'   dir = "documentation/",
-#'   relevancies = TRUE,
-#'   constraints = TRUE
+#'   form_id      = form,
+#'   dir          = "documentation/",
+#'   relevancies  = TRUE,
+#'   constraints  = TRUE
 #' )
 #'
-#' # 4. Download a mail merge template
+#' # 4. Download a mail-merge template
 #' cto_form_mail_template(
-#'   req,
 #'   form_id = form,
-#'   dir = "templates/",
-#'   type = 2
+#'   dir     = "templates/",
+#'   type    = 2
 #' )
 #' }
-#'
-cto_form_languages <- function(req, form_id) {
-  verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
 
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  checkmate::assert_string(form_id)
+cto_form_languages <- function(form_id) {
+  verbose <- get_verbose()
+  session <- get_session()
+  assert_form_id(form_id)
 
   url_path <- str_glue("forms/{form_id}/languages")
-  req <- req_url_query(req, t = as.double(Sys.time()) * 1000)
+  session <- req_url_query(session, t = as.double(Sys.time()) * 1000)
 
   if (verbose) cli_progress_step("Reading {.val {form_id}} languages")
 
-  resp <- fetch_api_response(req, url_path)
+  resp <- fetch_api_response(session, url_path)
   if (!is.null(resp$defaultIndex)) {
     resp$defaultIndex <- resp$defaultIndex + 1
   }
+  class(resp) <- "simple.list"
   resp
 }
 
 #' @export
 #' @rdname cto_form_languages
-cto_form_stata_template <- function(req, form_id, dir = getwd(), lang = NULL,
+cto_form_stata_template <- function(form_id, dir = getwd(), lang = NULL,
                                csv_dir = NULL, dta_dir = NULL) {
-  verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
+  verbose <- get_verbose()
+  session <- get_session()
 
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  checkmate::assert_string(form_id)
   checkmate::assert_directory(dir)
   checkmate::assert_string(lang, null.ok = TRUE)
   checkmate::assert_string(csv_dir, null.ok = TRUE)
   checkmate::assert_string(dta_dir, null.ok = TRUE)
+  assert_form_id(form_id)
 
   query <- list(
     dateTimeFormat = "MDY",
@@ -112,33 +118,34 @@ cto_form_stata_template <- function(req, form_id, dir = getwd(), lang = NULL,
     t = as.double(Sys.time()) * 1000
   )
 
-  query <- Filter(Negate(is.null), query)
+  query <- drop_nulls_recursive(query)
   url_path <- str_glue("forms/{form_id}/stata-template")
 
   if (verbose) cli_progress_step("Requesting {.val {form_id}} Stata template")
-  resp <- fetch_api_response(req_url_query(req, !!!query), url_path)
+  resp <- fetch_api_response(req_url_query(session, !!!query), url_path)
 
   url <- resp[["url"]]
   path <- file.path(dir, basename(url))
 
   if (verbose) cli_progress_step("Downloading {.file {path}}")
-  fetch_api_response(req, url, path)
+  fetch_api_response(session, url, path)
   invisible(path)
 }
 
 
 #' @export
 #' @rdname cto_form_languages
-cto_form_printable <- function(req, form_id, dir = getwd(), lang = NULL,
+cto_form_printable <- function(form_id, dir = getwd(), lang = NULL,
                                relevancies = FALSE, constraints = FALSE) {
-  verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
+  verbose <- get_verbose()
+  session <- get_session()
 
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  checkmate::assert_string(form_id)
   checkmate::assert_directory(dir)
   checkmate::assert_string(lang, null.ok = TRUE)
   checkmate::assert_flag(relevancies)
   checkmate::assert_flag(constraints)
+
+  assert_form_id(form_id)
 
   query <- list(
     lang = lang,
@@ -148,33 +155,34 @@ cto_form_printable <- function(req, form_id, dir = getwd(), lang = NULL,
     t = as.double(Sys.time()) * 1000
   )
 
-  query <- Filter(Negate(is.null), query)
+  query <- drop_nulls_recursive(query)
   url_path <- str_glue("forms/{form_id}/printable")
 
   if (verbose) cli_progress_step("Requesting {.val {form_id}} printable")
-  resp <- fetch_api_response(req_url_query(req, !!!query), url_path)
+  resp <- fetch_api_response(req_url_query(session, !!!query), url_path)
 
   url <- resp[["url"]]
   path <- file.path(dir, basename(url))
 
   if (verbose) cli_progress_step("Downloading {.file {path}}")
-  fetch_api_response(req, url, path)
+  fetch_api_response(session, url, path)
   invisible(path)
 }
 
 
 #' @export
 #' @rdname cto_form_languages
-cto_form_mail_template <- function(req, form_id, dir = getwd(),
+cto_form_mail_template <- function(form_id, dir = getwd(),
                                    type = 2, group_names = FALSE) {
-  verbose <- isTRUE(getOption("scto.verbose", default = TRUE))
+  verbose <- get_verbose()
+  session <- get_session()
 
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  checkmate::assert_string(form_id)
   checkmate::assert_directory(dir)
   checkmate::assert_flag(group_names)
   checkmate::assert_number(type, lower = 0, upper = 2)
   type <- floor(type)
+
+  assert_form_id(form_id)
 
   query <- list(
     type = type,
@@ -182,17 +190,17 @@ cto_form_mail_template <- function(req, form_id, dir = getwd(),
     t = as.double(Sys.time()) * 1000
   )
 
-  query <- Filter(Negate(is.null), query)
+  query <- drop_nulls_recursive(query)
   url_path <- str_glue("forms/{form_id}/mail-merge-template")
 
   if (verbose) cli_progress_step("Requesting {.val {form_id}} mail merge template")
-  resp <- fetch_api_response(req_url_query(req, !!!query), url_path)
+  resp <- fetch_api_response(req_url_query(session, !!!query), url_path)
 
   url <- resp[["url"]]
   path <- file.path(dir, basename(url))
 
   if (verbose) cli_progress_step("Downloading {.file {path}}")
-  fetch_api_response(req, url, path)
+  fetch_api_response(session, url, path)
   invisible(path)
 }
 

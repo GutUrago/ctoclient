@@ -1,67 +1,172 @@
 
-#' Retrieve Metadata from a SurveyCTO Server
+#' Retrieve Server Metadata and Resource Lists
 #'
-#' This function retrieves structural metadata regarding forms, groups, and
-#' datasets available on the server.
+#' @description
+#' These functions retrieve various metadata and lists of resources (forms,
+#' groups, teams, roles, users) from the SurveyCTO server.
 #'
-#' @param req A `httr2_request` object initialized via [cto_request()].
-#' @param which A character string specifying which subset of metadata to return.
-#'   One of:
-#'   \itemize{
-#'     \item `"all"` (default): Returns a list containing groups, datasets, and forms.
-#'     \item `"groups"`: Returns a data frame of form groups.
-#'     \item `"datasets"`: Returns a data frame of server datasets.
-#'     \item `"forms"`: Returns a data frame of deployed forms.
-#'   }
+#' * `cto_metadata()`: Retrieves a combined structure of forms, groups, and
+#'   datasets (legacy console endpoint).
+#' * `cto_form_ids()`: Returns a simple vector of all form IDs.
+#' * `cto_group_list()`: Lists all form groups.
+#' * `cto_team_list()`: Lists all available team IDs.
+#' * `cto_role_list()`: Lists all defined user roles.
+#' * `cto_user_list()`: Lists all users on the server.
+#'
+#' @param which String. Specifies which subset of metadata to return for
+#'   `cto_metadata()`. One of:
+#'   * `"all"` (default): Returns a list containing groups, datasets, and forms.
+#'   * `"groups"`: Returns a data frame of form groups.
+#'   * `"datasets"`: Returns a data frame of server datasets.
+#'   * `"forms"`: Returns a data frame of deployed forms.
+#' @param order_by String. Field to sort the results by. Available fields vary
+#'   by function (e.g., `"createdOn"`, `"id"`, `"title"`, or `"username"`).
+#' @param sort String. Sort direction: `"asc"` (ascending) or `"desc"` (descending).
+#' @param parent_group_id Number (Optional). Filter groups by their parent group ID.
+#' @param role_id String (Optional). Filter users by a specific Role ID.
 #'
 #' @return
+#' The return value depends on the function:
+#' * `cto_form_ids()` and `cto_team_list()` return a **character vector** of IDs.
+#' * `cto_metadata()` returns a **list** (if `which = "all"`) or a **data frame**.
+#' * `cto_group_list()`, `cto_role_list()`, and `cto_user_list()` return a **list**
+#'   or **data frame** of the requested resources (depending on pagination handling).
 #'
-#'`cto_form_ids` returns **a vector** of available form IDs, and `cto_metadata` returns an
-#'object containing the requested metadata.
-#'   \itemize{
-#'     \item If `which = "all"`, returns a named list.
-#'     \item Otherwise, returns the specific `data.frame` requested.
-#'   }
-#'
-#'
-#' @export
-#'
-#' @seealso [cto_request()], [cto_form_data()], [cto_form_metadata()], [cto_form_definition()]
-#'
+#' @family Server Metadata
+#' @name cto_metadata
 #'
 #' @examples
 #' \dontrun{
-#' # Authenticate first
-#' req <- cto_request("myserver", "myuser")
+#' # --- 1. Basic Metadata ---
+#' # Get all form IDs as a vector
+#' ids <- cto_form_ids()
 #'
-#' # Available form IDs
-#' ids <- cto_form_ids(req)
+#' # Get detailed metadata about forms
+#' meta_forms <- cto_metadata("forms")
 #'
-#' # Get all metadata
-#' meta <- cto_metadata(req)
-#' str(meta)
+#' # --- 2. Resource Lists ---
+#' # List all groups, sorted by title
+#' groups <- cto_group_list(order_by = "title", sort = "asc")
 #'
-#' # Get just the forms data frame
-#' forms_df <- cto_metadata(req, which = "forms")
-#' head(forms_df)
+#' # List all users with a specific role
+#' admins <- cto_user_list(role_id = "admin_role_id")
 #' }
-cto_form_ids <- function(req) {
-  verbose <- isTRUE(getOption("scto.verbose", TRUE))
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  if (verbose) cli_progress_step("Checking available forms IDs on {.field {req$server}}")
-  url_path <- "api/v2/forms/ids"
-  fetch_api_response(req, url_path)
+NULL
+
+#' @export
+#' @rdname cto_metadata
+cto_form_ids <- function() {
+  verbose <- get_verbose()
+  session <- get_session()
+  if (verbose) cli_progress_step(
+    "Listing form IDs on {.field {session$server}}",
+    "Listed form IDs on {.field {session$server}}"
+    )
+  fetch_api_response(session, "api/v2/forms/ids")
 }
 
 #' @export
-#' @rdname cto_form_ids
-cto_metadata <- function(req, which = c("all", "datasets", "forms", "groups")) {
-  verbose <- isTRUE(getOption("scto.verbose", TRUE))
+#' @rdname cto_metadata
+cto_metadata <- function(which = c("all", "datasets", "forms", "groups")) {
+  verbose <- get_verbose()
   which <- match.arg(which)
-  checkmate::assert_class(req, c("httr2_request", "scto_request"))
-  if (verbose) cli_progress_step("Reading metadata from {.field {req$server}}")
-  url_path <- "console/forms-groups-datasets/get"
-  metadata <- fetch_api_response(req, url_path)
+  session <- get_session()
+  if (verbose) cli_progress_step(
+    "Fetching {col_blue(which)} metadata from {.field {session$server}}",
+    "Fetched {col_blue(which)} metadata from {.field {session$server}}"
+    )
+  metadata <- fetch_api_response(session, "console/forms-groups-datasets/get")
   if (which == "all") metadata else metadata[[which]]
+}
+
+#' @export
+#' @rdname cto_metadata
+cto_group_list <- function(order_by = c("createdOn", "id", "title"),
+                           sort = c("asc", "desc"),
+                           parent_group_id = NULL) {
+  verbose <- get_verbose()
+  session <- get_session()
+  checkmate::assert_number(parent_group_id, null.ok = TRUE)
+
+  query <- list(
+    limit = 1000,
+    orderBy = match.arg(order_by),
+    orderByDirection = toupper(match.arg(sort)),
+    parentGroupId = parent_group_id
+  )
+  query <- drop_nulls_recursive(query)
+
+  if (verbose) cli_progress_step(
+    "Listing available groups on {.field {session$server}}",
+    "Listed available groups on {.field {session$server}}"
+  )
+
+  session <- req_url_query(session, !!!query)
+  fetch_paginated_response(session, "api/v2/groups")
+}
+
+
+#' @export
+#' @rdname cto_metadata
+cto_team_list <- function() {
+  verbose <- get_verbose()
+  session <- get_session()
+  if (verbose) cli_progress_step(
+    "Listing available teams on {.field {session$server}}",
+    "Listed available teams on {.field {session$server}}"
+  )
+  fetch_api_response(session, "api/v2/teams/ids")
+}
+
+
+
+#' @export
+#' @rdname cto_metadata
+cto_role_list <- function(order_by = c("createdOn", "id", "title", "createdBy"),
+                          sort = c("asc", "desc")) {
+  verbose <- get_verbose()
+  session <- get_session()
+
+  query <- list(
+    limit = 1000,
+    orderBy = match.arg(order_by),
+    orderByDirection = toupper(match.arg(sort))
+  )
+  query <- drop_nulls_recursive(query)
+
+  if (verbose) cli_progress_step(
+    "Listing available roles on {.field {session$server}}",
+    "Listed available roles on {.field {session$server}}"
+  )
+
+  session <- req_url_query(session, !!!query)
+  fetch_paginated_response(session, "api/v2/roles")
+}
+
+
+#' @export
+#' @rdname cto_metadata
+cto_user_list <- function(order_by = c("createdOn", "username", "roleId", "modifiedOn"),
+                          sort = c("asc", "desc"),
+                          role_id = NULL) {
+  verbose <- get_verbose()
+  session <- get_session()
+  checkmate::assert_string(role_id, null.ok = TRUE)
+
+  query <- list(
+    limit = 1000,
+    orderBy = match.arg(order_by),
+    orderByDirection = toupper(match.arg(sort)),
+    roleId = role_id
+  )
+  query <- drop_nulls_recursive(query)
+
+  if (verbose) cli_progress_step(
+    "Listing available users on {.field {session$server}}",
+    "Listed available users on {.field {session$server}}"
+  )
+
+  session <- req_url_query(session, !!!query)
+  fetch_paginated_response(session, "api/v2/users")
 }
 
