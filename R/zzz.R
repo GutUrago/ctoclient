@@ -1,7 +1,7 @@
-
 #' @importFrom cli cli_abort cli_warn cli_inform col_blue cli_progress_step
 #' @importFrom stringr str_c str_glue str_extract str_squish str_replace_all str_remove_all
 #' @importFrom httr2 req_url req_url_path req_url_query req_perform resp_body_json resp_body_raw
+#' @importFrom checkmate assert_string assert_flag assert_character assert_directory
 #' @importFrom rlang `:=` .data
 #' @importFrom dplyr mutate select across
 #' @importFrom tidyr matches all_of any_of everything
@@ -21,7 +21,9 @@ get_session <- function() {
   } else {
     session <- get(".session", envir = .ctoclient_env)
     if (!inherits(session, "cto_session")) {
-      cli_abort("Invalid session found. Please reconnect using {.run ctoclient::cto_connect()}.")
+      cli_abort(
+        "Invalid session found. Please reconnect using {.run ctoclient::cto_connect()}."
+      )
     }
     return(session)
   }
@@ -30,13 +32,29 @@ get_session <- function() {
 # Get verbose ----
 get_verbose <- function() isTRUE(getOption("ctoclient.verbose", TRUE))
 
+# Confirm Cookies ----
+# TODO: Include in all non-API endpoints
+confirm_cookies <- function() {
+  session <- get_session()
+  has_cookie <- !is.null(session$options$cookiefile)
+  if (!has_cookie) {
+    cli_abort(c(
+      x = "For this function to work you need to use cookies.",
+      i = "Please restart you connection with cookies {.run cto_connect(cookies = TRUE)}"
+    ))
+  }
+  invisible(has_cookie)
+}
+
+
 # Drop NULL list ----
 drop_nulls_recursive <- function(x) {
-  if (!is.list(x)) return(x)
+  if (!is.list(x)) {
+    return(x)
+  }
   x <- lapply(x, drop_nulls_recursive)
   Filter(function(z) !is.null(z) && !(is.list(z) && length(z) == 0), x)
 }
-
 
 # Assert form IDs ----
 assert_form_id <- function(form_id) {
@@ -45,7 +63,8 @@ assert_form_id <- function(form_id) {
   if (!(form_id %in% form_ids)) {
     cli_abort(c(
       x = "There is no form with {.val {form_id}} ID",
-      i = "Use {.run ctoclient::cto_form_ids()} to see available form IDs"))
+      i = "Use {.run ctoclient::cto_form_ids()} to see available form IDs"
+    ))
   }
   invisible(TRUE)
 }
@@ -53,7 +72,6 @@ assert_form_id <- function(form_id) {
 
 # Fetch API response ----
 fetch_api_response <- function(req, url_path = NULL, file_path = NULL) {
-
   if (!is.null(url_path)) {
     req <- req_url_path(req, url_path)
   }
@@ -90,10 +108,12 @@ center_text <- function(text, fill = " ", width = 78) {
   checkmate::assert_string(fill)
   if (nchar(text) < width) {
     padding_total <- width - nchar(text)
-    left_pad  <- floor(padding_total / 2)
+    left_pad <- floor(padding_total / 2)
     right_pad <- ceiling(padding_total / 2)
     paste0(strrep(fill, left_pad), text, strrep(fill, right_pad))
-  } else text
+  } else {
+    text
+  }
 }
 
 # Generate regex variable name ----

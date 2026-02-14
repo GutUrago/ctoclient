@@ -1,11 +1,8 @@
-
-
 #' List Available Server Datasets
 #'
 #' @description
-#' Retrieves a list of datasets available on the SurveyCTO server for the
-#' authenticated user. The results can be filtered by team, sorted, and ordered
-#' by specific metadata fields.
+#' Retrieves a list of datasets that the authenticated user has access to.
+#' Results can be filtered by team and ordered by specified fields.
 #'
 #' @param order_by String. The field to sort the results by. Options are:
 #'   `"id"`, `"title"`, `"createdOn"`, `"modifiedOn"`, `"status"`, `"version"`,
@@ -29,27 +26,42 @@
 #' # List datasets for a specific team, ordered by title
 #' team_ds <- cto_dataset_list(team_id = "team-123", order_by = "title")
 #' }
-cto_dataset_list <- function(order_by = "createdOn", sort = c("asc", "desc"), team_id = NULL) {
-  verbose <- get_verbose()
+cto_dataset_list <- function(
+  order_by = "createdOn",
+  sort = c("ASC", "DESC"),
+  team_id = NULL
+) {
   session <- get_session()
-  checkmate::assert_string(team_id, null.ok = TRUE)
+  assert_string(team_id, null.ok = TRUE)
 
-  choices <- c("id", "title", "createdOn", "modifiedOn", "status", "version", "discriminator")
+  order_choices <- c(
+    "id",
+    "title",
+    "createdOn",
+    "modifiedOn",
+    "status",
+    "version",
+    "discriminator"
+  )
   query <- list(
     limit = 1000,
-    orderBy = match.arg(order_by, choices),
-    orderByDirection = toupper(match.arg(sort)),
+    orderBy = match.arg(order_by, order_choices),
+    orderByDirection = match.arg(sort),
     teamId = team_id
   )
   query <- drop_nulls_recursive(query)
 
-  if (verbose) cli_progress_step(
-    "Listing available datasets on {.field {session$server}}",
-    "Listed available datasets on {.field {session$server}}"
-  )
+  if (get_verbose()) {
+    cli_progress_step(
+      "Listing available datasets on {.field {session$server}}",
+      "Listed available datasets on {.field {session$server}}"
+    )
+  }
 
   session <- req_url_query(session, !!!query)
   resp <- fetch_paginated_response(session, "api/v2/datasets")
-  if (length(resp) == 0) cli_warn("No datasets found on {.field {session$server}}")
+  if (length(resp) == 0) {
+    cli_warn("No datasets found on {.field {session$server}}")
+  }
   return(resp)
 }

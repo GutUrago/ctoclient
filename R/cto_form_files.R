@@ -1,9 +1,8 @@
-
 #' Download SurveyCTO Form Files and Templates
 #'
 #' @description
 #' These functions retrieve auxiliary files and templates associated with a
-#' deployed SurveyCTO form.
+#' deployed SurveyCTO form. All these functions require a stateful session to work.
 #'
 #' * [cto_form_languages()] retrieves the list of languages defined in the form.
 #' * [cto_form_stata_template()] downloads a Stata `.do` file template for
@@ -79,14 +78,19 @@
 #' }
 
 cto_form_languages <- function(form_id) {
-  verbose <- get_verbose()
+  confirm_cookies()
   session <- get_session()
   assert_form_id(form_id)
 
   url_path <- str_glue("forms/{form_id}/languages")
   session <- req_url_query(session, t = as.double(Sys.time()) * 1000)
 
-  if (verbose) cli_progress_step("Reading {.val {form_id}} languages")
+  if (get_verbose()) {
+    cli_progress_step(
+      "Reading {.val {form_id}} form languages",
+      "Read {.val {form_id}} form languages"
+    )
+  }
 
   resp <- fetch_api_response(session, url_path)
   if (!is.null(resp$defaultIndex)) {
@@ -98,15 +102,20 @@ cto_form_languages <- function(form_id) {
 
 #' @export
 #' @rdname cto_form_languages
-cto_form_stata_template <- function(form_id, dir = getwd(), lang = NULL,
-                               csv_dir = NULL, dta_dir = NULL) {
-  verbose <- get_verbose()
+cto_form_stata_template <- function(
+  form_id,
+  dir = getwd(),
+  lang = NULL,
+  csv_dir = NULL,
+  dta_dir = NULL
+) {
+  confirm_cookies()
   session <- get_session()
 
-  checkmate::assert_directory(dir)
-  checkmate::assert_string(lang, null.ok = TRUE)
-  checkmate::assert_string(csv_dir, null.ok = TRUE)
-  checkmate::assert_string(dta_dir, null.ok = TRUE)
+  assert_directory(dir)
+  assert_string(lang, null.ok = TRUE)
+  assert_string(csv_dir, null.ok = TRUE)
+  assert_string(dta_dir, null.ok = TRUE)
   assert_form_id(form_id)
 
   query <- list(
@@ -121,13 +130,16 @@ cto_form_stata_template <- function(form_id, dir = getwd(), lang = NULL,
   query <- drop_nulls_recursive(query)
   url_path <- str_glue("forms/{form_id}/stata-template")
 
-  if (verbose) cli_progress_step("Requesting {.val {form_id}} Stata template")
+  if (get_verbose()) {
+    cli_progress_step(
+      "Downloading {.val {form_id}} Stata template",
+      "Downloaded {.val {form_id}} Stata template"
+    )
+  }
   resp <- fetch_api_response(req_url_query(session, !!!query), url_path)
 
   url <- resp[["url"]]
   path <- file.path(dir, basename(url))
-
-  if (verbose) cli_progress_step("Downloading {.file {path}}")
   fetch_api_response(session, url, path)
   invisible(path)
 }
@@ -135,15 +147,20 @@ cto_form_stata_template <- function(form_id, dir = getwd(), lang = NULL,
 
 #' @export
 #' @rdname cto_form_languages
-cto_form_printable <- function(form_id, dir = getwd(), lang = NULL,
-                               relevancies = FALSE, constraints = FALSE) {
-  verbose <- get_verbose()
+cto_form_printable <- function(
+  form_id,
+  dir = getwd(),
+  lang = NULL,
+  relevancies = FALSE,
+  constraints = FALSE
+) {
+  confirm_cookies()
   session <- get_session()
 
-  checkmate::assert_directory(dir)
-  checkmate::assert_string(lang, null.ok = TRUE)
-  checkmate::assert_flag(relevancies)
-  checkmate::assert_flag(constraints)
+  assert_directory(dir)
+  assert_string(lang, null.ok = TRUE)
+  assert_flag(relevancies)
+  assert_flag(constraints)
 
   assert_form_id(form_id)
 
@@ -158,13 +175,16 @@ cto_form_printable <- function(form_id, dir = getwd(), lang = NULL,
   query <- drop_nulls_recursive(query)
   url_path <- str_glue("forms/{form_id}/printable")
 
-  if (verbose) cli_progress_step("Requesting {.val {form_id}} printable")
+  if (get_verbose()) {
+    cli_progress_step(
+      "Downloading {.val {form_id}} printable",
+      "Downloaded {.val {form_id}} printable"
+    )
+  }
   resp <- fetch_api_response(req_url_query(session, !!!query), url_path)
 
   url <- resp[["url"]]
   path <- file.path(dir, basename(url))
-
-  if (verbose) cli_progress_step("Downloading {.file {path}}")
   fetch_api_response(session, url, path)
   invisible(path)
 }
@@ -172,13 +192,17 @@ cto_form_printable <- function(form_id, dir = getwd(), lang = NULL,
 
 #' @export
 #' @rdname cto_form_languages
-cto_form_mail_template <- function(form_id, dir = getwd(),
-                                   type = 2, group_names = FALSE) {
-  verbose <- get_verbose()
+cto_form_mail_template <- function(
+  form_id,
+  dir = getwd(),
+  type = 2,
+  group_names = FALSE
+) {
+  confirm_cookies()
   session <- get_session()
 
-  checkmate::assert_directory(dir)
-  checkmate::assert_flag(group_names)
+  assert_directory(dir)
+  assert_flag(group_names)
   checkmate::assert_number(type, lower = 0, upper = 2)
   type <- floor(type)
 
@@ -193,15 +217,16 @@ cto_form_mail_template <- function(form_id, dir = getwd(),
   query <- drop_nulls_recursive(query)
   url_path <- str_glue("forms/{form_id}/mail-merge-template")
 
-  if (verbose) cli_progress_step("Requesting {.val {form_id}} mail merge template")
+  if (get_verbose()) {
+    cli_progress_step(
+      "Downloading {.val {form_id}} mail merge template",
+      "Downloaded {.val {form_id}} mail merge template"
+    )
+  }
   resp <- fetch_api_response(req_url_query(session, !!!query), url_path)
 
   url <- resp[["url"]]
   path <- file.path(dir, basename(url))
-
-  if (verbose) cli_progress_step("Downloading {.file {path}}")
   fetch_api_response(session, url, path)
   invisible(path)
 }
-
-

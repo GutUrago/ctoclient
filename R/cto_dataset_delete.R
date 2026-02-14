@@ -1,12 +1,10 @@
-
-
 #' Delete or Purge a Dataset
 #'
 #' @description
 #' Functions to permanently remove data from the server.
 #'
-#' * `cto_delete_dataset()`: **Permanently deletes** the dataset definition and
-#'   all associated records. The dataset ID will no longer exist.
+#' * `cto_delete_dataset()`: **Permanently deletes** a dataset and all its associated data.
+#'   This operation cannot be undone
 #' * `cto_purge_dataset()`: Removes **all records** from the dataset but
 #'   keeps the dataset definition (schema/ID) intact.
 #'
@@ -27,14 +25,15 @@
 #' cto_dataset_purge(id = "hh_data")
 #' }
 cto_dataset_delete <- function(id) {
-  checkmate::assert_string(id)
-  verbose <- get_verbose()
+  assert_string(id)
   session <- get_session()
 
-  if (verbose) cli_progress_step(
-    "Deleting dataset with {col_blue(id)} ID",
-    "Dataset with ID {col_blue(id)} deleted"
-  )
+  if (get_verbose()) {
+    cli_progress_step(
+      "Deleting dataset with {col_blue(id)} ID",
+      "Deleted dataset with {col_blue(id)} ID"
+    )
+  }
 
   path <- str_glue("api/v2/datasets/{id}")
   session <- httr2::req_method(session, "DELETE")
@@ -46,14 +45,15 @@ cto_dataset_delete <- function(id) {
 #' @export
 #' @rdname cto_dataset_delete
 cto_dataset_purge <- function(id) {
-  checkmate::assert_string(id)
-  verbose <- get_verbose()
+  assert_string(id)
   session <- get_session()
 
-  if (verbose) cli_progress_step(
-    "Purging dataset with {col_blue(id)} ID",
-    "Dataset with ID {col_blue(id)} purged"
-  )
+  if (get_verbose()) {
+    cli_progress_step(
+      "Purging dataset with {col_blue(id)} ID",
+      "Purged dataset with {col_blue(id)} ID"
+    )
+  }
 
   path <- str_glue("/api/v2/datasets/{id}/purge")
   session <- httr2::req_method(session, "POST")

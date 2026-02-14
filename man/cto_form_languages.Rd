@@ -69,7 +69,7 @@ invisibly.
 }
 \description{
 These functions retrieve auxiliary files and templates associated with a
-deployed SurveyCTO form.
+deployed SurveyCTO form. All these functions require a stateful session to work.
 \itemize{
 \item \code{\link[=cto_form_languages]{cto_form_languages()}} retrieves the list of languages defined in the form.
 \item \code{\link[=cto_form_stata_template]{cto_form_stata_template()}} downloads a Stata \code{.do} file template for

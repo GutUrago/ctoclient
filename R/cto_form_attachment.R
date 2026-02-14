@@ -1,5 +1,3 @@
-
-
 #' Download Attachments from a SurveyCTO Form
 #'
 #' @description
@@ -62,16 +60,22 @@
 #' prices <- read.csv(p)
 #' }
 
-cto_form_attachment <- function(form_id, filename = NULL,
-                                dir = getwd(), overwrite = FALSE) {
+cto_form_attachment <- function(
+  form_id,
+  filename = NULL,
+  dir = getwd(),
+  overwrite = FALSE
+) {
   verbose <- get_verbose()
   session <- get_session()
 
-  checkmate::assert_directory(dir)
-  checkmate::assert_flag(overwrite)
-  checkmate::assert_character(filename, null.ok = TRUE)
+  assert_directory(dir)
+  assert_flag(overwrite)
+  assert_character(filename, null.ok = TRUE)
 
-  if (verbose) cli_progress_step("Checking available attachments")
+  if (verbose) {
+    cli_progress_step("Checking available attachments")
+  }
 
   metadata <- cto_form_metadata(form_id)
   media_files <- purrr::pluck(metadata, "deployedGroupFiles", "mediaFiles")
@@ -85,17 +89,25 @@ cto_form_attachment <- function(form_id, filename = NULL,
   if (!is.null(filename)) {
     files <- files[files %in% filename]
     if (length(files) < length(filename)) {
-      cli_warn("These files were not found: {.val {filename[!(filename %in% files)]}}")
+      cli_warn(
+        "These files were not found: {.val {filename[!(filename %in% files)]}}"
+      )
     }
   }
-  if (length(files) == 0) cli_abort(c(
-    "x" = "All requested attachment not found",
-    "i" = "Use {.fn cto_form_metadata} to see all available attachments"
+  if (length(files) == 0) {
+    cli_abort(c(
+      "x" = "All requested attachment not found",
+      "i" = "Use {.fn cto_form_metadata} to see all available attachments"
     ))
+  }
 
   paths_all <- file.path(dir, files)
-  to_download <- if (overwrite) rep(TRUE, length(files)) else !file.exists(paths_all)
-  urls <- purrr::map_chr(files, ~purrr::pluck(media_files, .x, "downloadLink"))
+  to_download <- if (overwrite) {
+    rep(TRUE, length(files))
+  } else {
+    !file.exists(paths_all)
+  }
+  urls <- purrr::map_chr(files, ~ purrr::pluck(media_files, .x, "downloadLink"))
   urls_to_fetch <- urls[to_download]
   paths_to_fetch <- paths_all[to_download]
 
@@ -104,21 +116,27 @@ cto_form_attachment <- function(form_id, filename = NULL,
   }
 
   if (sum(to_download) > 0) {
-    if (verbose) cli_progress_step("Downloading {.val {sum(to_download)}} attachment{?s}")
+    if (verbose) {
+      cli_progress_step("Downloading {.val {sum(to_download)}} attachment{?s}")
+    }
 
-    reqs <- purrr::map(urls_to_fetch, ~req_url(session, .x))
+    reqs <- purrr::map(urls_to_fetch, ~ req_url(session, .x))
     purrr::walk2(
-      reqs, paths_to_fetch, function(r, p) {
-        tryCatch({
-          resp <- req_perform(r)
-          writeBin(httr2::resp_body_raw(resp), p)
-        },
-        error = function(e) cli_warn("{.val {basename(p)}}: {conditionMessage(e)}")
+      reqs,
+      paths_to_fetch,
+      function(r, p) {
+        tryCatch(
+          {
+            resp <- req_perform(r)
+            writeBin(httr2::resp_body_raw(resp), p)
+          },
+          error = function(e) {
+            cli_warn("{.val {basename(p)}}: {conditionMessage(e)}")
+          }
         )
       }
     )
   }
 
   invisible(paths_all[file.exists(paths_all)])
-
-  }
+}

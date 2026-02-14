@@ -15,7 +15,7 @@ cto_metadata(which = c("all", "datasets", "forms", "groups"))
 
 cto_group_list(
   order_by = c("createdOn", "id", "title"),
-  sort = c("asc", "desc"),
+  sort = c("ASC", "DESC"),
   parent_group_id = NULL
 )
 
@@ -23,12 +23,12 @@ cto_team_list()
 
 cto_role_list(
   order_by = c("createdOn", "id", "title", "createdBy"),
-  sort = c("asc", "desc")
+  sort = c("ASC", "DESC")
 )
 
 cto_user_list(
   order_by = c("createdOn", "username", "roleId", "modifiedOn"),
-  sort = c("asc", "desc"),
+  sort = c("ASC", "DESC"),
   role_id = NULL
 )
 }
@@ -45,7 +45,7 @@ cto_user_list(
 \item{order_by}{String. Field to sort the results by. Available fields vary
 by function (e.g., \code{"createdOn"}, \code{"id"}, \code{"title"}, or \code{"username"}).}
 
-\item{sort}{String. Sort direction: \code{"asc"} (ascending) or \code{"desc"} (descending).}
+\item{sort}{String. Sort direction: \code{"ASC"} (ascending) or \code{"DESC"} (descending).}
 
 \item{parent_group_id}{Number (Optional). Filter groups by their parent group ID.}
 

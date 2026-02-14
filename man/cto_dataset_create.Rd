@@ -8,15 +8,22 @@
 cto_dataset_create(
   id,
   title = id,
-  parent_group_id = 1,
-  discriminator = c("data", "cases", "enumerators"),
-  unique_record_field = NULL
+  discriminator = NULL,
+  unique_record_field = NULL,
+  allow_offline_updates = NULL,
+  id_format_options = list(prefix = NULL, allowCapitalLetters = NULL, suffix = NULL,
+    numberOfDigits = NULL),
+  cases_management_options = list(otherUserCode = NULL, showFinalizedSentWhenTree = NULL,
+    enumeratorDatasetId = NULL, showColumnsWhenTable = NULL, displayMode = NULL,
+    entryMode = NULL),
+  location_context = list(parentGroupId = 1, siblingBelow = list(itemClass = NULL, id =
+    NULL), siblingAbove = list(itemClass = NULL, id = NULL))
 )
 
 cto_dataset_upload(
-  file,
   id,
-  upload_mode = c("append", "merge", "clear"),
+  file,
+  upload_mode = c("APPEND", "MERGE", "CLEAR"),
   joining_field = NULL
 )
 }
@@ -25,28 +32,25 @@ cto_dataset_upload(
 
 \item{title}{String. The display title of the dataset. Defaults to \code{id}.}
 
-\item{parent_group_id}{Integer. The ID of the group the dataset belongs to. Defaults to \code{1}.}
+\item{discriminator}{String. The type of dataset to create.}
 
-\item{discriminator}{String. The type of dataset to create. Options are:
-\itemize{
-\item \code{"data"}: Standard server dataset.
-\item \code{"cases"}: Case management dataset.
-\item \code{"enumerators"}: Enumerator dataset.
-}}
-
-\item{unique_record_field}{String (Optional). The name of the field that
+\item{unique_record_field}{String. The name of the field that
 uniquely identifies records. Required if \code{upload_mode} is "merge".}
+
+\item{allow_offline_updates}{Logical. Whether the dataset allows
+updates while offline.}
+
+\item{id_format_options}{List. Options for formatting IDs within the dataset.}
+
+\item{cases_management_options}{List. Specific configurations for case management}
+
+\item{location_context}{List. Metadata regarding where the dataset resides.}
 
 \item{file}{String. Path to the local CSV file to upload.}
 
-\item{upload_mode}{String. How the data should be handled:
-\itemize{
-\item \code{"append"}: Add new rows to the existing data.
-\item \code{"merge"}: Update existing rows based on the \code{joining_field} and add new ones.
-\item \code{"clear"}: Wipe existing data before uploading.
-}}
+\item{upload_mode}{String. How the data should be handled.}
 
-\item{joining_field}{String (Optional). The column name used to match records
+\item{joining_field}{String. The column name used to match records
 during a "merge". Often the same as \code{unique_record_field}.}
 }
 \value{
@@ -56,13 +60,17 @@ A list containing the API response (metadata for creation, or job summary for up
 These functions manage the lifecycle of SurveyCTO server datasets: creating the
 container definition and populating it with data.
 \itemize{
-\item \code{cto_dataset_create()}: Defines a new empty dataset container on the server.
-\item \code{cto_dataset_upload()}: Uploads a CSV file to an existing dataset.
+\item \code{cto_dataset_create()}: Creates a new dataset with the specified configuration.
+\item \code{cto_dataset_upload()}: UUploads records from a CSV file to the specified dataset. Supports:
+\itemize{
+\item APPEND: add new records
+\item MERGE: update existing records based on unique field
+\item CLEAR: replace all data
+}
 }
 }
 \examples{
 \dontrun{
-# --- Approach 1: Granular Control ---
 # 1. Create the container
 cto_dataset_create(
 id = "hh_data",

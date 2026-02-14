@@ -18,8 +18,8 @@ A list confirming the operation status.
 \description{
 Functions to permanently remove data from the server.
 \itemize{
-\item \code{cto_delete_dataset()}: \strong{Permanently deletes} the dataset definition and
-all associated records. The dataset ID will no longer exist.
+\item \code{cto_delete_dataset()}: \strong{Permanently deletes} a dataset and all its associated data.
+This operation cannot be undone
 \item \code{cto_purge_dataset()}: Removes \strong{all records} from the dataset but
 keeps the dataset definition (schema/ID) intact.
 }

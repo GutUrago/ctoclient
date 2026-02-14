@@ -6,7 +6,7 @@
 \alias{cto_is_connected}
 \title{Connect to and manage a SurveyCTO Server connection}
 \usage{
-cto_connect(server, username, password = NULL)
+cto_connect(server, username, password = NULL, cookies = TRUE)
 
 cto_set_connection(session)
 
@@ -21,6 +21,10 @@ set this to \code{"my-org"}.}
 
 \item{password}{String. The user password. If left \code{NULL} (recommended),
 it prompts you for the password interactively.}
+
+\item{cookies}{Logical. If \code{TRUE} (default), the client preserves cookies across
+requests and handles CSRF tokens automatically. This is required for maintaining
+stateful sessions to access endpoints that not available through the REST API.}
 
 \item{session}{A \code{cto_session} object previously created by \code{cto_connect()}.}
 }
@@ -43,11 +47,13 @@ internal environment.
 \details{
 \subsection{Session Management}{
 
-Unlike typical \code{httr2} workflows, this package operates \strong{statefully}.
-Upon successful authentication, the request object is assigned to an internal
-package environment (\code{.ctoclient_env}). You do not need to pass a request
+By default, this package operates \strong{statefully} by preserving cookies
+if the connection is established with the \code{cookies = TRUE} argument.
+Upon successful authentication, the request object (\code{.session}) is assigned to an internal
+package environment (\code{.ctoclient_env}). Therefore, you do not need to pass a request
 object to other functions in this package; they will automatically use the
-active session.
+active session. If you are working with multiple servers, please use \code{cto_set_connection()}
+to switch the server connection.
 }
 
 \subsection{Security Best Practices}{

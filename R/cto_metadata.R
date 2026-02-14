@@ -1,4 +1,3 @@
-
 #' Retrieve Server Metadata and Resource Lists
 #'
 #' @description
@@ -21,7 +20,7 @@
 #'   * `"forms"`: Returns a data frame of deployed forms.
 #' @param order_by String. Field to sort the results by. Available fields vary
 #'   by function (e.g., `"createdOn"`, `"id"`, `"title"`, or `"username"`).
-#' @param sort String. Sort direction: `"asc"` (ascending) or `"desc"` (descending).
+#' @param sort String. Sort direction: `"ASC"` (ascending) or `"DESC"` (descending).
 #' @param parent_group_id Number (Optional). Filter groups by their parent group ID.
 #' @param role_id String (Optional). Filter users by a specific Role ID.
 #'
@@ -56,34 +55,39 @@ NULL
 #' @export
 #' @rdname cto_metadata
 cto_form_ids <- function() {
-  verbose <- get_verbose()
   session <- get_session()
-  if (verbose) cli_progress_step(
-    "Listing form IDs on {.field {session$server}}",
-    "Listed form IDs on {.field {session$server}}"
+  if (get_verbose()) {
+    cli_progress_step(
+      "Listing form IDs on {.field {session$server}}",
+      "Listed form IDs on {.field {session$server}}"
     )
+  }
   fetch_api_response(session, "api/v2/forms/ids")
 }
 
 #' @export
 #' @rdname cto_metadata
 cto_metadata <- function(which = c("all", "datasets", "forms", "groups")) {
-  verbose <- get_verbose()
+  confirm_cookies()
   which <- match.arg(which)
   session <- get_session()
-  if (verbose) cli_progress_step(
-    "Fetching {col_blue(which)} metadata from {.field {session$server}}",
-    "Fetched {col_blue(which)} metadata from {.field {session$server}}"
+  if (get_verbose()) {
+    cli_progress_step(
+      "Fetching {col_blue(which)} metadata from {.field {session$server}}",
+      "Fetched {col_blue(which)} metadata from {.field {session$server}}"
     )
+  }
   metadata <- fetch_api_response(session, "console/forms-groups-datasets/get")
   if (which == "all") metadata else metadata[[which]]
 }
 
 #' @export
 #' @rdname cto_metadata
-cto_group_list <- function(order_by = c("createdOn", "id", "title"),
-                           sort = c("asc", "desc"),
-                           parent_group_id = NULL) {
+cto_group_list <- function(
+  order_by = c("createdOn", "id", "title"),
+  sort = c("ASC", "DESC"),
+  parent_group_id = NULL
+) {
   verbose <- get_verbose()
   session <- get_session()
   checkmate::assert_number(parent_group_id, null.ok = TRUE)
@@ -91,15 +95,17 @@ cto_group_list <- function(order_by = c("createdOn", "id", "title"),
   query <- list(
     limit = 1000,
     orderBy = match.arg(order_by),
-    orderByDirection = toupper(match.arg(sort)),
+    orderByDirection = match.arg(sort),
     parentGroupId = parent_group_id
   )
   query <- drop_nulls_recursive(query)
 
-  if (verbose) cli_progress_step(
-    "Listing available groups on {.field {session$server}}",
-    "Listed available groups on {.field {session$server}}"
-  )
+  if (verbose) {
+    cli_progress_step(
+      "Listing available groups on {.field {session$server}}",
+      "Listed available groups on {.field {session$server}}"
+    )
+  }
 
   session <- req_url_query(session, !!!query)
   fetch_paginated_response(session, "api/v2/groups")
@@ -109,35 +115,38 @@ cto_group_list <- function(order_by = c("createdOn", "id", "title"),
 #' @export
 #' @rdname cto_metadata
 cto_team_list <- function() {
-  verbose <- get_verbose()
   session <- get_session()
-  if (verbose) cli_progress_step(
-    "Listing available teams on {.field {session$server}}",
-    "Listed available teams on {.field {session$server}}"
-  )
+  if (get_verbose()) {
+    cli_progress_step(
+      "Listing available teams on {.field {session$server}}",
+      "Listed available teams on {.field {session$server}}"
+    )
+  }
   fetch_api_response(session, "api/v2/teams/ids")
 }
 
 
-
 #' @export
 #' @rdname cto_metadata
-cto_role_list <- function(order_by = c("createdOn", "id", "title", "createdBy"),
-                          sort = c("asc", "desc")) {
-  verbose <- get_verbose()
+cto_role_list <- function(
+  order_by = c("createdOn", "id", "title", "createdBy"),
+  sort = c("ASC", "DESC")
+) {
   session <- get_session()
 
   query <- list(
     limit = 1000,
     orderBy = match.arg(order_by),
-    orderByDirection = toupper(match.arg(sort))
+    orderByDirection = match.arg(sort)
   )
   query <- drop_nulls_recursive(query)
 
-  if (verbose) cli_progress_step(
-    "Listing available roles on {.field {session$server}}",
-    "Listed available roles on {.field {session$server}}"
-  )
+  if (get_verbose()) {
+    cli_progress_step(
+      "Listing available roles on {.field {session$server}}",
+      "Listed available roles on {.field {session$server}}"
+    )
+  }
 
   session <- req_url_query(session, !!!query)
   fetch_paginated_response(session, "api/v2/roles")
@@ -146,27 +155,29 @@ cto_role_list <- function(order_by = c("createdOn", "id", "title", "createdBy"),
 
 #' @export
 #' @rdname cto_metadata
-cto_user_list <- function(order_by = c("createdOn", "username", "roleId", "modifiedOn"),
-                          sort = c("asc", "desc"),
-                          role_id = NULL) {
-  verbose <- get_verbose()
+cto_user_list <- function(
+  order_by = c("createdOn", "username", "roleId", "modifiedOn"),
+  sort = c("ASC", "DESC"),
+  role_id = NULL
+) {
   session <- get_session()
-  checkmate::assert_string(role_id, null.ok = TRUE)
+  assert_string(role_id, null.ok = TRUE)
 
   query <- list(
     limit = 1000,
     orderBy = match.arg(order_by),
-    orderByDirection = toupper(match.arg(sort)),
+    orderByDirection = match.arg(sort),
     roleId = role_id
   )
   query <- drop_nulls_recursive(query)
 
-  if (verbose) cli_progress_step(
-    "Listing available users on {.field {session$server}}",
-    "Listed available users on {.field {session$server}}"
-  )
+  if (get_verbose()) {
+    cli_progress_step(
+      "Listing available users on {.field {session$server}}",
+      "Listed available users on {.field {session$server}}"
+    )
+  }
 
   session <- req_url_query(session, !!!query)
   fetch_paginated_response(session, "api/v2/users")
 }
-

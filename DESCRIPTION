@@ -2,7 +2,7 @@ Package: ctoclient
 Type: Package
 Title: A Modern and Flexible Data Pipeline for 'SurveyCTO'
 Version: 0.0.0.9000
-Date: 2026-01-13
+Date: 2026-02-14
 Authors@R: c(
     person(
       "Gutama Girja", "Urago",
@@ -37,6 +37,7 @@ Imports:
     tidyr
 Suggests: 
     curl,
+    httptest2,
     jsonlite,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

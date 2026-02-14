@@ -1,5 +1,3 @@
-
-
 #' Get Dataset Properties
 #'
 #' @description
@@ -18,14 +16,15 @@
 #' ds_info <- cto_dataset_info(id = "hh_data")
 #' }
 cto_dataset_info <- function(id) {
-  verbose <- get_verbose()
   session <- get_session()
-  checkmate::assert_string(id)
+  assert_string(id)
 
-  if (verbose) cli_progress_step(
-    "Fetching {col_blue(id)} dataset information",
-    "Fetching {col_blue(id)} dataset information"
-  )
+  if (get_verbose()) {
+    cli_progress_step(
+      "Fetching {col_blue(id)} dataset information",
+      "Fetching {col_blue(id)} dataset information"
+    )
+  }
 
   path <- str_glue("api/v2/datasets/{id}")
   res <- fetch_api_response(session, path)

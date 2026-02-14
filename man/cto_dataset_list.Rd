@@ -6,7 +6,7 @@
 \usage{
 cto_dataset_list(
   order_by = "createdOn",
-  sort = c("asc", "desc"),
+  sort = c("ASC", "DESC"),
   team_id = NULL
 )
 }
@@ -26,9 +26,8 @@ Example: \code{'team-456'}.}
 A data frame containing the metadata of available datasets.
 }
 \description{
-Retrieves a list of datasets available on the SurveyCTO server for the
-authenticated user. The results can be filtered by team, sorted, and ordered
-by specific metadata fields.
+Retrieves a list of datasets that the authenticated user has access to.
+Results can be filtered by team and ordered by specified fields.
 }
 \examples{
 \dontrun{

@@ -28,7 +28,7 @@ Defaults to \code{"media"}. The directory must exist.}
 will be overwritten. If \code{FALSE} (the default), existing files are skipped.}
 }
 \value{
-Returns \code{invisible(NULL)}. The function is called for its side effect
+Returns a vector of file paths (invisibly). The function is called for its side effect
 of downloading files to the local disk.
 }
 \description{

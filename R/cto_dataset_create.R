@@ -1,29 +1,28 @@
-
-
 #' Create or Upload to Server Datasets
 #'
 #' @description
 #' These functions manage the lifecycle of SurveyCTO server datasets: creating the
 #' container definition and populating it with data.
 #'
-#' * `cto_dataset_create()`: Defines a new empty dataset container on the server.
-#' * `cto_dataset_upload()`: Uploads a CSV file to an existing dataset.
+#' * `cto_dataset_create()`: Creates a new dataset with the specified configuration.
+#' * `cto_dataset_upload()`: UUploads records from a CSV file to the specified dataset. Supports:
+#'   * APPEND: add new records
+#'   * MERGE: update existing records based on unique field
+#'   * CLEAR: replace all data
 #'
 #' @param id String. The unique identifier for the dataset (e.g., "household_data").
-#' @param file String. Path to the local CSV file to upload.
 #' @param title String. The display title of the dataset. Defaults to `id`.
-#' @param parent_group_id Integer. The ID of the group the dataset belongs to. Defaults to `1`.
-#' @param discriminator String. The type of dataset to create. Options are:
-#'   * `"data"`: Standard server dataset.
-#'   * `"cases"`: Case management dataset.
-#'   * `"enumerators"`: Enumerator dataset.
-#' @param unique_record_field String (Optional). The name of the field that
+#' @param id_format_options List. Options for formatting IDs within the dataset.
+#' @param cases_management_options List. Specific configurations for case management
+#' @param location_context List. Metadata regarding where the dataset resides.
+#' @param discriminator String. The type of dataset to create.
+#' @param unique_record_field String. The name of the field that
 #'   uniquely identifies records. Required if `upload_mode` is "merge".
-#' @param upload_mode String. How the data should be handled:
-#'   * `"append"`: Add new rows to the existing data.
-#'   * `"merge"`: Update existing rows based on the `joining_field` and add new ones.
-#'   * `"clear"`: Wipe existing data before uploading.
-#' @param joining_field String (Optional). The column name used to match records
+#' @param allow_offline_updates Logical. Whether the dataset allows
+#'   updates while offline.
+#' @param file String. Path to the local CSV file to upload.
+#' @param upload_mode String. How the data should be handled.
+#' @param joining_field String. The column name used to match records
 #'   during a "merge". Often the same as `unique_record_field`.
 #'
 #' @return A list containing the API response (metadata for creation, or job summary for upload).
@@ -33,7 +32,6 @@
 #'
 #' @examples
 #' \dontrun{
-#' # --- Approach 1: Granular Control ---
 #' # 1. Create the container
 #' cto_dataset_create(
 #' id = "hh_data",
@@ -49,28 +47,64 @@
 #' joining_field = "hh_id"
 #' )
 #' }
-cto_dataset_create <- function(id, title = id, parent_group_id = 1,
-                               discriminator = c("data", "cases", "enumerators"),
-                               unique_record_field = NULL) {
-  verbose <- get_verbose()
+cto_dataset_create <- function(
+  id,
+  title = id,
+  discriminator = NULL,
+  unique_record_field = NULL,
+  allow_offline_updates = NULL,
+  id_format_options = list(
+    prefix = NULL,
+    allowCapitalLetters = NULL,
+    suffix = NULL,
+    numberOfDigits = NULL
+  ),
+  cases_management_options = list(
+    otherUserCode = NULL,
+    showFinalizedSentWhenTree = NULL,
+    enumeratorDatasetId = NULL,
+    showColumnsWhenTable = NULL,
+    displayMode = NULL,
+    entryMode = NULL
+  ),
+  location_context = list(
+    parentGroupId = 1,
+    siblingBelow = list(
+      itemClass = NULL,
+      id = NULL
+    ),
+    siblingAbove = list(
+      itemClass = NULL,
+      id = NULL
+    )
+  )
+) {
   session <- get_session()
-  checkmate::assert_string(unique_record_field, null.ok = TRUE)
-  checkmate::assert_string(id)
-  checkmate::assert_string(title)
 
+  assert_string(id)
+  assert_string(title)
+  assert_string(unique_record_field, null.ok = TRUE)
+  assert_flag(allow_offline_updates, null.ok = TRUE)
+
+  ds <- c("CASES", "ENUMERATORS", "DATA")
   query <- list(
+    idFormatOptions = id_format_options,
+    allowOfflineUpdates = allow_offline_updates,
     id = id,
     title = title,
-    locationContext = list(parentGroupId = parent_group_id),
-    discriminator = toupper(match.arg(discriminator)),
+    casesManagementOptions = cases_management_options,
+    locationContext = location_context,
+    discriminator = if (!is.null(discriminator)) match.arg(discriminator, ds),
     uniqueRecordField = unique_record_field
   )
   query <- drop_nulls_recursive(query)
 
-  if (verbose) cli_progress_step(
-    "Creating {col_blue(id)} dataset",
-    "Created {col_blue(id)} dataset"
-  )
+  if (get_verbose()) {
+    cli_progress_step(
+      "Creating {col_blue(id)} dataset",
+      "Created {col_blue(id)} dataset"
+    )
+  }
 
   session <- httr2::req_body_json(session, query)
   session <- httr2::req_method(session, "POST")
@@ -80,24 +114,32 @@ cto_dataset_create <- function(id, title = id, parent_group_id = 1,
   res
 }
 
-
-
 #' @export
 #' @rdname cto_dataset_create
-cto_dataset_upload <- function(file, id, upload_mode = c("append", "merge", "clear"),
-                               joining_field = NULL) {
-  verbose <- get_verbose()
+cto_dataset_upload <- function(
+  id,
+  file,
+  upload_mode = c("APPEND", "MERGE", "CLEAR"),
+  joining_field = NULL
+) {
   session <- get_session()
   checkmate::assert_file_exists(file, 'r', "csv")
-  checkmate::assert_string(joining_field, null.ok = TRUE)
+  assert_string(joining_field, null.ok = TRUE)
 
   metadata <- list(
     joiningField = joining_field,
-    uploadMode = toupper(match.arg(upload_mode))
+    uploadMode = match.arg(upload_mode)
   )
 
-  metadata <- Filter(Negate(is.null), metadata)
-  metadata_json <- jsonlite::toJSON(metadata)
+  metadata <- drop_nulls_recursive(metadata)
+  metadata_json <- jsonlite::toJSON(metadata, auto_unbox = TRUE)
+
+  if (get_verbose()) {
+    cli_progress_step(
+      "Uploading {col_blue(id)} dataset...",
+      "Uploaded {col_blue(id)} dataset"
+    )
+  }
 
   path <- str_glue("api/v2/datasets/{id}/records/upload")
   session <- httr2::req_body_multipart(

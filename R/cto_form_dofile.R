@@ -1,6 +1,3 @@
-
-
-
 #' Generate a Stata Do-File with Variable and Value Labels from a SurveyCTO Form
 #'
 #' @description
@@ -54,10 +51,11 @@
 #' }
 
 cto_form_dofile <- function(form_id, path = NULL) {
-
   verbose <- get_verbose()
 
-  if (!is.null(path)) checkmate::assert_path_for_output(path, TRUE, "do")
+  if (!is.null(path)) {
+    checkmate::assert_path_for_output(path, TRUE, "do")
+  }
 
   fp <- cto_form_definition(form_id, dir = tempdir(), overwrite = TRUE)
   form <- list(
@@ -67,7 +65,9 @@ cto_form_dofile <- function(form_id, path = NULL) {
   )
 
   if (!is.null(path)) {
-    cli_progress_step("Writing {.val {form_id}} Stata do-file to {.file {path}}")
+    cli_progress_step(
+      "Writing {.val {form_id}} Stata do-file to {.file {path}}"
+    )
   } else {
     cli_progress_step("Writing {.val {form_id}} Stata do-file")
   }
@@ -82,20 +82,31 @@ cto_form_dofile <- function(form_id, path = NULL) {
     paste0("*", t1, "*"),
     paste0("*", t2, "*"),
     strrep("*", 80),
-    "", "",
+    "",
+    "",
     .sep = "\n"
   )
 
   # --- 2. Label Column Detection ---
   find_label_col <- function(cols, choices_cols = FALSE) {
     matches <- cols[grepl("^label", cols, TRUE)]
-    if (length(matches) == 0) cli_abort("No column with label name found.")
+    if (length(matches) == 0) {
+      cli_abort("No column with label name found.")
+    }
 
     if (length(matches) > 1) {
       default_lang <- form$settings$default_language
-      dl <- if (is.null(default_lang) || is.na(default_lang) || default_lang == "") "english" else default_lang
+      dl <- if (
+        is.null(default_lang) || is.na(default_lang) || default_lang == ""
+      ) {
+        "english"
+      } else {
+        default_lang
+      }
       matches_lang <- matches[grepl(dl, matches, TRUE)]
-      if (length(matches_lang) > 0) return(matches_lang[1])
+      if (length(matches_lang) > 0) {
+        return(matches_lang[1])
+      }
       return(matches[1])
     }
     return(matches)
@@ -144,9 +155,13 @@ cto_form_dofile <- function(form_id, path = NULL) {
   choice_sets_s1 <- choices_all |>
     dplyr::filter(.data$list_name %in% valid_choices_s1) |>
     dplyr::summarise(
-      stata_cmd = paste0('label define ', dplyr::first(.data$list_name), ' ',
-                         paste0(.data$value, ' "', .data$label_clean, '"', collapse = " "),
-                         ', modify'),
+      stata_cmd = paste0(
+        'label define ',
+        dplyr::first(.data$list_name),
+        ' ',
+        paste0(.data$value, ' "', .data$label_clean, '"', collapse = " "),
+        ', modify'
+      ),
       .by = "list_name"
     )
 
@@ -155,14 +170,19 @@ cto_form_dofile <- function(form_id, path = NULL) {
     dplyr::filter(.data$list_name %in% valid_choices_sm) |>
     select("list_name", "value", "label_clean") |>
     mutate(
-      value = ifelse(.data$value < 0, paste0("_", abs(.data$value)), as.character(.data$value))
+      value = ifelse(
+        .data$value < 0,
+        paste0("_", abs(.data$value)),
+        as.character(.data$value)
+      )
     ) |>
     dplyr::group_split(.data$list_name)
 
-    names(multi_lookup) <- sort(unique(choices_all$list_name[choices_all$list_name %in% valid_choices_sm]))
+  names(multi_lookup) <- sort(unique(choices_all$list_name[
+    choices_all$list_name %in% valid_choices_sm
+  ]))
 
-
-    # --- 5. Process Variables ---
+  # --- 5. Process Variables ---
 
   # Pre-clean survey data
   var_labels <- survey |>
@@ -176,23 +196,42 @@ cto_form_dofile <- function(form_id, path = NULL) {
         .data$type,
         .init = 0,
         .f = function(i, x) {
-          if (grepl("begin repeat", x, TRUE)) i + 1
-          else if (grepl("end repeat", x, TRUE)) i - 1
-          else i
+          if (grepl("begin repeat", x, TRUE)) {
+            i + 1
+          } else if (grepl("end repeat", x, TRUE)) {
+            i - 1
+          } else {
+            i
+          }
         }
       )[-1],
 
-      is_repeat      = .data$repeat_level > 0,
-      is_slt_multi   = grepl("^select_multiple", .data$type, TRUE),
-      list_name_raw  = str_extract(.data$type, "(?<= )\\S+"),
-      list_name      = ifelse(.data$is_slt_multi, "slt_multi_binary", .data$list_name_raw),
-      list_multi     = ifelse(.data$is_slt_multi, .data$list_name_raw, NA_character_),
-      is_null_fields = grepl("^note|^begin group|^end group|^begin repeat|^end repeat", .data$type, TRUE)
+      is_repeat = .data$repeat_level > 0,
+      is_slt_multi = grepl("^select_multiple", .data$type, TRUE),
+      list_name_raw = str_extract(.data$type, "(?<= )\\S+"),
+      list_name = ifelse(
+        .data$is_slt_multi,
+        "slt_multi_binary",
+        .data$list_name_raw
+      ),
+      list_multi = ifelse(
+        .data$is_slt_multi,
+        .data$list_name_raw,
+        NA_character_
+      ),
+      is_null_fields = grepl(
+        "^note|^begin group|^end group|^begin repeat|^end repeat",
+        .data$type,
+        TRUE
+      )
     ) |>
     dplyr::filter(!.data$is_null_fields, !is.na(.data[[var_label_col]])) |>
     # Generate regex only for relevant rows later if possible, but structure implies we need it here
     mutate(
-      regex_varname = purrr::pmap_chr(list(.data$name, .data$repeat_level, .data$is_slt_multi), gen_regex_varname),
+      regex_varname = purrr::pmap_chr(
+        list(.data$name, .data$repeat_level, .data$is_slt_multi),
+        gen_regex_varname
+      ),
 
       # Efficient cleaning of the label column
       cleaned_label = .data[[var_label_col]] |>
@@ -216,65 +255,120 @@ cto_form_dofile <- function(form_id, path = NULL) {
   # 1. Complex Select Multiple Logic
   vars_multi <- var_labels |>
     dplyr::filter(.data$is_slt_multi) |>
-    mutate(stata_cmd = purrr::pmap_chr(
-      list(.data$regex_varname, .data$list_multi, .data$var_label, .data$var_note, .data$name),
-      function(n, l, v, vn, ln) {
-
-        base_cmd <- str_c(
-          "cap {\n",
-          "\tunab vars : ", ln, "*\n",
-          "\tforeach var of local vars {\n",
-          "\t\tif regexm(\"`var'\", \"", n, "\") {\n",
-          "\t\t\tcap label variable `var' \"", v, "\"\n",
-          "\t\t\tcap note `var': \"", vn, "\"\n",
-          "\t\t\tcap label values `var' slt_multi_binary\n"
-        )
-
-        choice_cmds <- ""
-        if (!is.na(l) && l %in% names(multi_lookup)) {
-          choices <- multi_lookup[[l]]
-          patterns <- stringr::str_replace(n, stringr::fixed("*[0-9]+"), choices$value)
-          full_labels <- paste0(choices$label_clean, " - ", v)
-          full_labels <- ifelse(nchar(full_labels) > 80, stringr::str_trunc(full_labels, 80), full_labels)
-
-          choice_cmds <- paste0(
-            "\t\tif regexm(\"`var'\", \"", patterns, "\") {\n",
-            "\t\t\tcap label variable `var' \"", full_labels, "\"\n",
-            "\t\t\t}\n",
-            collapse = ""
+    mutate(
+      stata_cmd = purrr::pmap_chr(
+        list(
+          .data$regex_varname,
+          .data$list_multi,
+          .data$var_label,
+          .data$var_note,
+          .data$name
+        ),
+        function(n, l, v, vn, ln) {
+          base_cmd <- str_c(
+            "cap {\n",
+            "\tunab vars : ",
+            ln,
+            "*\n",
+            "\tforeach var of local vars {\n",
+            "\t\tif regexm(\"`var'\", \"",
+            n,
+            "\") {\n",
+            "\t\t\tcap label variable `var' \"",
+            v,
+            "\"\n",
+            "\t\t\tcap note `var': \"",
+            vn,
+            "\"\n",
+            "\t\t\tcap label values `var' slt_multi_binary\n"
           )
-        } else {
-          choice_cmds <- paste0("\t\tcap label variable `var' \"", v, "\"\n")
-        }
 
-        str_c(base_cmd, choice_cmds, "\t\t}\n", "\t}\n", "}")
-      }
-    ))
+          choice_cmds <- ""
+          if (!is.na(l) && l %in% names(multi_lookup)) {
+            choices <- multi_lookup[[l]]
+            patterns <- stringr::str_replace(
+              n,
+              stringr::fixed("*[0-9]+"),
+              choices$value
+            )
+            full_labels <- paste0(choices$label_clean, " - ", v)
+            full_labels <- ifelse(
+              nchar(full_labels) > 80,
+              stringr::str_trunc(full_labels, 80),
+              full_labels
+            )
+
+            choice_cmds <- paste0(
+              "\t\tif regexm(\"`var'\", \"",
+              patterns,
+              "\") {\n",
+              "\t\t\tcap label variable `var' \"",
+              full_labels,
+              "\"\n",
+              "\t\t\t}\n",
+              collapse = ""
+            )
+          } else {
+            choice_cmds <- paste0("\t\tcap label variable `var' \"", v, "\"\n")
+          }
+
+          str_c(base_cmd, choice_cmds, "\t\t}\n", "\t}\n", "}")
+        }
+      )
+    )
 
   # 2. Logic for Repeats (Non-Multi)
   vars_repeat <- var_labels |>
     dplyr::filter(!.data$is_slt_multi & .data$is_repeat) |>
-    mutate(stata_cmd = str_c(
-      "cap {\n",
-      "\tunab vars : ", .data$name, "*\n",
-      "\tforeach var of local vars {\n",
-      "\t\tif regexm(\"`var'\", \"", .data$regex_varname, "\") {\n",
-      "\t\t\tcap label variable `var' \"", .data$var_label, "\"\n",
-      "\t\t\tcap note `var': \"", .data$var_note, "\"\n",
-      ifelse(.data$has_list, paste0("\t\t\tcap label values `var' ", .data$list_name, "\n"), ""),
-      "\t\t}\n",
-      "\t}\n",
-      "}"
-    ))
+    mutate(
+      stata_cmd = str_c(
+        "cap {\n",
+        "\tunab vars : ",
+        .data$name,
+        "*\n",
+        "\tforeach var of local vars {\n",
+        "\t\tif regexm(\"`var'\", \"",
+        .data$regex_varname,
+        "\") {\n",
+        "\t\t\tcap label variable `var' \"",
+        .data$var_label,
+        "\"\n",
+        "\t\t\tcap note `var': \"",
+        .data$var_note,
+        "\"\n",
+        ifelse(
+          .data$has_list,
+          paste0("\t\t\tcap label values `var' ", .data$list_name, "\n"),
+          ""
+        ),
+        "\t\t}\n",
+        "\t}\n",
+        "}"
+      )
+    )
 
   # 3. Simple Variables (Non-Multi, Non-Repeat)
   vars_simple <- var_labels |>
     dplyr::filter(!.data$is_slt_multi & !.data$is_repeat) |>
-    mutate(stata_cmd = str_c(
-      "cap label variable ", .data$name, " \"", .data$var_label, "\"\n",
-      "cap note variable ", .data$name, " \"", .data$var_note, "\"",
-      ifelse(.data$has_list, paste0("\ncap label values ", .data$name, " ", .data$list_name), "")
-    ))
+    mutate(
+      stata_cmd = str_c(
+        "cap label variable ",
+        .data$name,
+        " \"",
+        .data$var_label,
+        "\"\n",
+        "cap note variable ",
+        .data$name,
+        " \"",
+        .data$var_note,
+        "\"",
+        ifelse(
+          .data$has_list,
+          paste0("\ncap label values ", .data$name, " ", .data$list_name),
+          ""
+        )
+      )
+    )
 
   # Combine and Restore Order
   labels_set <- dplyr::bind_rows(vars_multi, vars_repeat, vars_simple) |>
@@ -288,11 +382,13 @@ cto_form_dofile <- function(form_id, path = NULL) {
     "",
     "label define slt_multi_binary 1 \"Yes\" 0 \"No\", modify",
     choice_sets_s1[["stata_cmd"]],
-    "", "",
+    "",
+    "",
     paste0("*", center_text(" VARIABLE LABELS ", "-"), "*"),
     "",
     labels_set[["stata_cmd"]],
-    "", "",
+    "",
+    "",
     paste0("*", center_text(" DEFAULT FIELDS ", "-"), "*"),
     "",
     c(
@@ -306,10 +402,13 @@ cto_form_dofile <- function(form_id, path = NULL) {
       'cap label variable review_comments "Comments made during review"',
       'cap label variable review_corrections "Corrections made during review"'
     ),
-    "", "",
+    "",
+    "",
     paste0("*", center_text(" THE END! ", "-"), "*")
   )
 
-  if (!is.null(path)) writeLines(do_file_content, path)
+  if (!is.null(path)) {
+    writeLines(do_file_content, path)
+  }
   return(invisible(do_file_content))
 }

@@ -1,4 +1,3 @@
-
 #' Download Attachments from SurveyCTO Form Data
 #'
 #' @description
@@ -23,7 +22,7 @@
 #'    attachment URL pattern.
 #' 3. Downloads the identified files sequentially to the specified `dir`.
 #'
-#' @return Returns `invisible(NULL)`. The function is called for its side effect
+#' @return Returns a vector of file paths (invisibly). The function is called for its side effect
 #'   of downloading files to the local disk.
 #'
 #' @family Form Management Functions
@@ -44,20 +43,26 @@
 #'   overwrite = TRUE
 #' )
 #' }
-cto_form_data_attachment <- function(form_id,
-                                     fields = everything(),
-                                     private_key = NULL,
-                                     dir = file.path(getwd(), "media"),
-                                     overwrite = FALSE) {
-
+cto_form_data_attachment <- function(
+  form_id,
+  fields = everything(),
+  private_key = NULL,
+  dir = file.path(getwd(), "media"),
+  overwrite = FALSE
+) {
   verbose <- get_verbose()
-  checkmate::assert_directory(dir)
-  checkmate::assert_logical(overwrite, len = 1, any.missing = FALSE)
+  assert_directory(dir)
+  assert_flag(overwrite)
   session <- get_session()
 
   rgx <- "^https://.*\\.surveycto\\.com/api/v2/forms/.*/submissions/uuid:.*/attachments/.*\\.*$"
 
   df <- cto_form_data(form_id, private_key = private_key, tidy = FALSE)
+
+  if (length(df) == 0) {
+    cli_warn("There is no submission for {col_blue(form_id)} form.")
+    return(invisible())
+  }
 
   urls <- df |>
     dplyr::select({{ fields }}) |>
@@ -70,8 +75,9 @@ cto_form_data_attachment <- function(form_id,
   if (length(urls) == 0) {
     if (is.null(private_key)) {
       cli_warn(c(
-      "No submission attachments found.",
-      "Did you forget to provide `private_key`?"))
+        "No submission attachments found.",
+        "Did you forget to provide `private_key`?"
+      ))
     } else {
       cli_warn("No submission attachments found.")
     }
@@ -79,26 +85,38 @@ cto_form_data_attachment <- function(form_id,
   }
 
   file_paths <- file.path(dir, basename(urls))
-  to_download <- if (overwrite) rep(TRUE, length(urls)) else !file.exists(file_paths)
+  to_download <- if (overwrite) {
+    rep(TRUE, length(urls))
+  } else {
+    !file.exists(file_paths)
+  }
 
-  urls_to_fetch  <- urls[to_download]
+  urls_to_fetch <- urls[to_download]
   paths_to_fetch <- file_paths[to_download]
 
-  skipped <- length(urls) - sum(to_download)
-  if (skipped > 0) cli_inform("Skipping {.val {skipped}} existing file{?s}")
-
   if (length(paths_to_fetch) > 0) {
-    if (verbose) cli_progress_step("Downloading {.val {length(paths_to_fetch)}} attachment{?s}")
-    if (!is.null(private_key)) {
-      session <- httr2::req_body_multipart(session, private_key = curl::form_file(private_key))
+    if (verbose) {
+      cli_progress_step(
+        "Downloading {.val {length(paths_to_fetch)}} attachment{?s}"
+      )
     }
-    reqs <- purrr::map(urls_to_fetch, ~req_url(session, .x))
+    if (!is.null(private_key)) {
+      session <- httr2::req_body_multipart(
+        session,
+        private_key = curl::form_file(private_key)
+      )
+    }
+    reqs <- purrr::map(urls_to_fetch, ~ req_url(session, .x))
 
     purrr::walk2(
-      reqs, paths_to_fetch, function(r, p) {
+      reqs,
+      paths_to_fetch,
+      function(r, p) {
         tryCatch(
           fetch_api_response(r, NULL, p),
-          error = function(e) cli_warn("{col_blue(basename(p))}: {conditionMessage(e)}")
+          error = function(e) {
+            cli_warn("{col_blue(basename(p))}: {conditionMessage(e)}")
+          }
         )
       }
     )

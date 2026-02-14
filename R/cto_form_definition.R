@@ -1,5 +1,3 @@
-
-
 #' Download SurveyCTO Form Metadata and Definitions
 #'
 #' @description
@@ -54,38 +52,43 @@
 #' settings <- read_excel(file_path, sheet = "settings")
 #' }
 cto_form_metadata <- function(form_id) {
-  verbose <- get_verbose()
+  confirm_cookies()
   session <- get_session()
   assert_form_id(form_id)
 
-  t <- as.numeric(Sys.time()) * 1000
   url_path <- str_glue("forms/{form_id}/files")
-  session <- req_url_query(session, t = t)
+  session <- req_url_query(session, t = as.numeric(Sys.time()) * 1000)
 
-  if (verbose) cli_progress_step(
-    "Reading {col_blue(form_id)} form metadata",
-    "Read {col_blue(form_id)} form metadata"
+  if (get_verbose()) {
+    cli_progress_step(
+      "Reading {col_blue(form_id)} form metadata",
+      "Read {col_blue(form_id)} form metadata"
     )
+  }
   fetch_api_response(session, url_path)
 }
 
 
 #' @export
 #' @rdname cto_form_metadata
-cto_form_definition <- function(form_id, version = NULL,
-                                dir = getwd(), overwrite = FALSE) {
-  verbose <- get_verbose()
+cto_form_definition <- function(
+  form_id,
+  version = NULL,
+  dir = getwd(),
+  overwrite = FALSE
+) {
+  confirm_cookies()
   session <- get_session()
 
-  checkmate::assert_string(version, null.ok = TRUE)
-  checkmate::assert_directory(dir)
-  checkmate::assert_flag(overwrite)
+  assert_string(version, null.ok = TRUE)
+  assert_directory(dir)
+  assert_flag(overwrite)
 
   metadata <- cto_form_metadata(form_id)
   df_versions <- dplyr::bind_rows(
     purrr::pluck(metadata, "deployedGroupFiles", "definitionFile"),
     purrr::pluck(metadata, "previousDefinitionFiles")
-    )
+  )
 
   if (!is.null(version)) {
     df <- dplyr::filter(df_versions, .data$formVersion == version)
@@ -93,22 +96,29 @@ cto_form_definition <- function(form_id, version = NULL,
       cli_abort(c(
         "x" = "{col_blue(form_id)} doesn't have the specified form version: {.val {version}}",
         "i" = "Use {.run ctoclient::cto_form_metadata()} to see available form versions"
-        ))
+      ))
     }
   } else {
     df <- df_versions[1, ]
     version <- df$formVersion[1]
-    }
+  }
 
-  file_path <- file.path(dir, df$filename[1])
+  file_path <- file.path(dir, basename(df$filename[1]))
+
   if (!file.exists(file_path) || overwrite) {
     url <- df$downloadLink[1]
-    if (verbose) cli_progress_step("Downloading form definition version {.val {version}}")
+    if (get_verbose()) {
+      cli_progress_step(
+        "Downloading form definition version {.val {version}}",
+        "Downloaded form definition version {.val {version}}"
+      )
+    }
     fetch_api_response(req_url(session, url), file_path = file_path)
   } else {
-    cli_inform(c(v = "{.val {basename(file_path)}} already exist in the directory"))
+    cli_inform(c(
+      v = "{.val {basename(file_path)}} already exist in the directory"
+    ))
   }
 
   invisible(file_path)
-
 }

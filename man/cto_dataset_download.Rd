@@ -16,7 +16,7 @@ Defaults to the current working directory.}
 
 \item{overwrite}{Logical. If \code{TRUE}, existing files in \code{dir} will be
 overwritten. If \code{FALSE} (the default), existing files are skipped to conserve
-bandwidth, and a message is printed for each skipped file.}
+bandwidth.}
 }
 \value{
 (Invisibly) A character vector of file paths to the successfully
@@ -28,12 +28,9 @@ as CSV files.
 }
 \details{
 \itemize{
-\item \strong{Validation:} If \code{id}s are provided, they are validated against the
-available server datasets via \code{cto_list_datasets()}.
 \item \strong{Smart Downloading:} If \code{overwrite = FALSE}, the function checks if the
-target file already exists in \code{dir}.
-\item \strong{Error Handling:} If a specific dataset fails to download (e.g., HTTP
-403/404), a warning is printed with the dataset name, but the function
+target file already exists in \code{dir} and skips the download.
+\item \strong{Error Handling:} If a specific dataset fails to download, a warning is printed with the dataset name, but the function
 continues processing the remaining list.
 }
 }
