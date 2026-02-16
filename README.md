@@ -55,7 +55,7 @@ To avoid hard-coding credentials in your scripts, it is highly recommended to st
 2. Add your credentials:
 
 ``` r
-SERVER="myorganization.surveycto.com"
+SERVER="myorg"
 USER="myemail@example.com"
 PASS="mypassword"
 ```
