@@ -5,7 +5,7 @@
 #' container definition and populating it with data.
 #'
 #' * `cto_dataset_create()`: Creates a new dataset with the specified configuration.
-#' * `cto_dataset_upload()`: UUploads records from a CSV file to the specified dataset. Supports:
+#' * `cto_dataset_upload()`: Uploads records from a CSV file to the specified dataset. Supports:
 #'   * APPEND: add new records
 #'   * MERGE: update existing records based on unique field
 #'   * CLEAR: replace all data

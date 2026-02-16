@@ -1,3 +1,3 @@
-# scto 0.0.0.9000
+# ctoclient 0.0.0.9000
 
 * Development version.

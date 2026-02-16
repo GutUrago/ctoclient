@@ -61,7 +61,7 @@ These functions manage the lifecycle of SurveyCTO server datasets: creating the
 container definition and populating it with data.
 \itemize{
 \item \code{cto_dataset_create()}: Creates a new dataset with the specified configuration.
-\item \code{cto_dataset_upload()}: UUploads records from a CSV file to the specified dataset. Supports:
+\item \code{cto_dataset_upload()}: Uploads records from a CSV file to the specified dataset. Supports:
 \itemize{
 \item APPEND: add new records
 \item MERGE: update existing records based on unique field

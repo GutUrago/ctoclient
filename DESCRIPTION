@@ -11,14 +11,14 @@ Authors@R: c(
       comment = c(ORCID = "0000-0001-5588-2301")
     )
   )
-Description: A modern and flexible R client for the 'SurveyCTO' REST API <https://developer.surveycto.com/>, 
-    a mobile and offline data collection platform, providing a modern and consistent interface for 
+Description: A modern and flexible R client for the 'SurveyCTO', a mobile and 
+    offline data collection platform, providing a modern and consistent interface for 
     programmatic access to server resources. Built on top of the 'httr2' package, 
     it enables secure and efficient data retrieval and returns analysis-ready 
-    data through optional tidying. Additional functionality includes 
-    downloading server datasets, form metadata and definitions, and associated attachments. 
-    Robust authentication and request handling make the package suitable for 
-    automated survey monitoring and downstream analysis.
+    data through optional tidying. It includes functions to create, upload, and 
+    download server datasets, in addition to fetching form data, files, and 
+    submission attachments. Robust authentication and request handling make the 
+    package suitable for automated survey monitoring and downstream analysis.
 License: MIT + file LICENSE
 Language: en-US
 Encoding: UTF-8
