@@ -1,8 +1,8 @@
 Package: ctoclient
 Type: Package
 Title: A Modern and Flexible Data Pipeline for 'SurveyCTO'
-Version: 0.0.0.9000
-Date: 2026-02-14
+Version: 0.0.1
+Date: 2026-02-16
 Authors@R: c(
     person(
       "Gutama Girja", "Urago",
@@ -41,7 +41,7 @@ Suggests:
     jsonlite,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-URL: https://github.com/guturago/ctoclient
+URL: https://guturago.github.io/ctoclient/, https://github.com/guturago/ctoclient/
 BugReports: https://github.com/guturago/ctoclient/issues
 Depends: 
     R (>= 4.1.0)
