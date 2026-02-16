@@ -10,12 +10,12 @@ bibentry(
   author  = person("Gutama Girja", "Urago"),
   year    = year,
   note    = note,
-  doi     = "10.5281/zenodo.15262092",
+  doi     = "10.5281/zenodo.18107568",
   url     = "https://guturago.github.io/ctoclient/",
   textVersion = paste0(
             "Urago, G. G. (",
             year,
             "). ctoclient: A Modern and Flexible Data Pipeline for SurveyCTO in R. ",
             note,
-            ". doi:10.5281/zenodo.15262092. https://guturago.github.io/ctoclient/.")
+            ". doi:10.5281/zenodo.18107568. https://guturago.github.io/ctoclient/.")
 )

@@ -2,7 +2,7 @@
 # ctoclient: A Modern and Flexible Data Pipeline for 'SurveyCTO'
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/GutUrago/ctoclient/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/GutUrago/scto/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/GutUrago/ctoclient/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/GutUrago/ctoclient/actions/workflows/R-CMD-check.yaml)
 [![DOI](https://zenodo.org/badge/1121002963.svg)](https://doi.org/10.5281/zenodo.18107568)
 <!-- badges: end -->
 
