@@ -53,7 +53,7 @@ file.
 2.  Add your credentials:
 
 ``` r
-SERVER="myorganization.surveycto.com"
+SERVER="myorg"
 USER="myemail@example.com"
 PASS="mypassword"
 ```
