@@ -407,6 +407,9 @@ cto_form_dofile <- function(form_id, path = NULL) {
     paste0("*", center_text(" THE END! ", "-"), "*")
   )
 
+  # Incase of missing value labels for binaries
+  do_file_content <- sub('(") - ', '\\1', do_file_content)
+
   if (!is.null(path)) {
     writeLines(do_file_content, path)
   }
