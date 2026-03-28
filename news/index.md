@@ -2,6 +2,8 @@
 
 ## ctoclient 0.1.0
 
+CRAN release: 2026-03-28
+
 **cto_form_dofile** \* Skips dynamic value labels \* Other minor
 improvements
 
