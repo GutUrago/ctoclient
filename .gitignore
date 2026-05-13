@@ -6,3 +6,5 @@
 .quarto
 temp.R
 docs
+.positai
+inst/doc

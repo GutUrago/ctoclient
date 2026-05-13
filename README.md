@@ -3,53 +3,69 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/GutUrago/ctoclient/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/GutUrago/ctoclient/actions/workflows/R-CMD-check.yaml)
+[![CRAN status](https://www.r-pkg.org/badges/version/ctoclient)](https://cran.r-project.org/package=ctoclient) 
+[![cran checks](https://badges.cranchecks.info/worst/ctoclient.svg)](https://cran.r-project.org/web/checks/check_results_ctoclient.html)
+[![Codecov test coverage](https://codecov.io/gh/GutUrago/ctoclient/graph/badge.svg)](https://app.codecov.io/gh/GutUrago/ctoclient)
+[![minimal R version](https://img.shields.io/badge/R%3E%3D-4.1.0-6666ff.svg)](https://cran.r-project.org/)
 [![DOI](https://zenodo.org/badge/1121002963.svg)](https://doi.org/10.5281/zenodo.18107568)
 <!-- badges: end -->
 
+**`ctoclient`** is a modern, fast, and flexible high-level R client for the 
+[SurveyCTO REST API](https://developer.surveycto.com/). 
+Built on top of the robust [httr2](https://httr2.r-lib.org/) framework, it provides a consistent and pipe-friendly 
+interface for programmatic access to server resources.
 
-A modern and flexible R client for the [SurveyCTO REST API](https://developer.surveycto.com/), 
-a mobile and offline data collection platform, providing a modern and consistent interface for 
-programmatic access to server resources. Built on top of the [httr2 package](https://httr2.r-lib.org/), 
-it enables secure and efficient data retrieval and returns analysis-ready 
-data through optional tidying. It includes functions to create, upload, and 
-download server datasets, in addition to fetching form data, files, and 
-submission attachments. Robust authentication and request handling make the 
-package suitable for automated survey monitoring and downstream analysis.
+## Why use `ctoclient`?
+
+* **Analysis Ready:** Automatically tidies messy API responses into clean data frames.
+* **Encrypted Data Support:** Seamlessly handle encrypted forms with private keys.
+* **Full Resource Coverage:** Manage forms, server datasets, attachments, and metadata.
+* **Modern Auth:** Robust session handling and secure credential management.
+* **Extendable:** Built on `httr2` request objects, allowing for easy customization and extension of API requests.
+* **Stata Integration:** Built-in tools for generating `.do` files and templates for legacy pipelines.
 
 
-This package is built with robustness and efficiency in mind, aiming to streamline 
-the workflow for researchers and data analysts who rely on SurveyCTO. By automating 
-the retrieval of data, attachments, and server metadata, `ctoclient` allows you to 
-focus on analysis rather than manual data management. Whether you are running daily 
-monitoring dashboards or final impact evaluations, this tool ensures your data 
-pipeline is reproducible and reliable.
+## Documentation (Upcoming)
 
-We welcome contributions from the community! If you encounter a bug, have a 
-feature request, or want to improve the documentation, please feel free to open 
-an issue or submit a pull request.
+- Managing connections and sessions
+- Working with form data
+- Managing server data
+
+
+
 
 ## Installation
 
-You can install the stable version of ctoclient:
-
-```r
-install.packages("ctoclient")
-```
-or development version:
+Install the stable version from CRAN:
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("GutUrago/ctoclient")
-
-# or 
-
-# install.packages("remotes")
-remotes::install_github("GutUrago/ctoclient")
+install.packages("ctoclient")
 ```
 
-## Setup & Authentication
+Or get the development version with the latest features:
 
-To avoid hard-coding credentials in your scripts, it is highly recommended to store your SurveyCTO server details in your .Renviron file.
+``` r
+# install.packages("pak")
+pak::pak("GutUrago/ctoclient")
+```
+
+## 1. Setup & Authentication
+
+To keep your credentials secure, **never hard-code passwords** in scripts. 
+`ctoclient` supports two primary ways to authenticate:
+
+**1. Interactive Prompts (Recommended for Dev)**
+
+If you leave the password blank, `ctoclient` will securely prompt you for it in the console.
+
+``` r
+library(ctoclient)
+cto_connect(server = "myorg", username = "admin@example.com")
+```
+
+**2. Environment Variables (Recommended for CI/CD)**
+
+To use `.Renviron` file:
 
 1. Run `usethis::edit_r_environ()` to open your environment file.
 2. Add your credentials:
@@ -61,29 +77,15 @@ PASS="mypassword"
 ```
 3. Restart R.
 
-## Usage
+[!TIP] For even higher security, consider using the [keyring](https://keyring.r-lib.org/) 
+package to store passwords in your system's secure credential store.
 
-### 1. Connect to the Server
 
-``` r
-library(ctoclient)
 
-# Connect using environment variables (recommended)
-cto_connect(
-  server    = Sys.getenv("SERVER"),
-  user      = Sys.getenv("USER"),
-  password  = Sys.getenv("PASS")
-)
-
-# Verify connection
-if (cto_is_connected()) {
-  message("Successfully connected to SurveyCTO!")
-}
-```
 
 ### 2. Working with Forms and Data
 
-Download form definitions, raw data, and attachments. Export functions with cto_*
+Download form definitions, data, and attachments.
 
 ``` r
 # List all available forms
@@ -94,6 +96,12 @@ cto_form_metadata('myform')
 
 # Download data for a specific form
 data <- cto_form_data("myform")
+
+# Download encrypted data
+data <- cto_form_data("myform", "mykey")
+
+# Download encrypted data in a raw format
+data <- cto_form_data("myform", "mykey", tidy = FALSE)
 
 # Download form submission medias
 cto_form_data_attachment('myform', ends_with('_img'), "mykey")
@@ -108,6 +116,7 @@ cto_form_dofile('myform', "form.do")
 cto_form_attachment("myform", dir = "data/attachments", overwrite = TRUE)
 
 ```
+
 
 ### 3. Server Datasets
 
@@ -134,6 +143,7 @@ cto_dataset_delete("mydata")
 ```
 
 
+
 ### 4. Utilities and Metadata
 
 Retrieve server configuration and helper files.
@@ -151,6 +161,13 @@ cto_form_printable("myform")
 # Get a mail-merge template of the form
 cto_form_mail_template("myform")
 ```
+
+
+## Contributing
+
+We welcome contributions! If you encounter a bug or have a feature request, 
+please [open an issue](https://github.com/GutUrago/ctoclient/issues). 
+Pull requests should include updated tests and documentation.
 
 
 ## Disclaimer

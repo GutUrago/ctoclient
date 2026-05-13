@@ -1,4 +1,12 @@
 url: https://guturago.github.io/ctoclient/
+
+authors:
+  Gutama Girja Urago:
+    href: https://guturago.github.io/about.html
+
 template:
+  light-switch: yes
   bootstrap: 5
+  includes:
+    in_header: pkgdown/extra-header.html
 
