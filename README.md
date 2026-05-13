@@ -5,7 +5,7 @@
 [![R-CMD-check](https://github.com/GutUrago/ctoclient/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/GutUrago/ctoclient/actions/workflows/R-CMD-check.yaml)
 [![CRAN status](https://www.r-pkg.org/badges/version/ctoclient)](https://cran.r-project.org/package=ctoclient) 
 [![cran checks](https://badges.cranchecks.info/worst/ctoclient.svg)](https://cran.r-project.org/web/checks/check_results_ctoclient.html)
-[![Codecov test coverage](https://codecov.io/gh/GutUrago/ctoclient/graph/badge.svg)](https://app.codecov.io/gh/GutUrago/ctoclient)
+[![Codecov test coverage](https://codecov.io/gh/guturago/ctoclient/graph/badge.svg)](https://app.codecov.io/gh/guturago/ctoclient)
 [![minimal R version](https://img.shields.io/badge/R%3E%3D-4.1.0-6666ff.svg)](https://cran.r-project.org/)
 [![DOI](https://zenodo.org/badge/1121002963.svg)](https://doi.org/10.5281/zenodo.18107568)
 <!-- badges: end -->
