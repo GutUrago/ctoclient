@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>A Modern and Flexible Data Pipeline for SurveyCTO • ctoclient</title>
-<script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="lightswitch.js"></script><script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -15,10 +15,24 @@
 <meta property="og:description" content="A modern and flexible R client for the SurveyCTO, a mobile and offline data collection platform, providing a modern and consistent interface for programmatic access to server resources. Built on top of the httr2 package, it enables secure and efficient data retrieval and returns analysis-ready data through optional tidying. It includes functions to create, upload, and download server datasets, in addition to fetching form data, files, and submission attachments. Robust authentication and request handling make the package suitable for automated survey monitoring and downstream analysis.">
 </head>
 <body>
+<p>
+
+
+
+
+
+
+
+
+  pkgdown/extra-header.html
+
+  
+
+  </p>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="index.html">ctoclient</a>
 
@@ -32,6 +46,12 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="articles/managing-connections.html">Managing Connections</a></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -39,6 +59,14 @@
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/guturago/ctoclient/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
@@ -51,66 +79,72 @@
 </h1></div>
 <!-- badges: start -->
 
-<p>A modern and flexible R client for the <a href="https://developer.surveycto.com/" class="external-link">SurveyCTO REST API</a>, a mobile and offline data collection platform, providing a modern and consistent interface for programmatic access to server resources. Built on top of the <a href="https://httr2.r-lib.org/" class="external-link">httr2 package</a>, it enables secure and efficient data retrieval and returns analysis-ready data through optional tidying. It includes functions to create, upload, and download server datasets, in addition to fetching form data, files, and submission attachments. Robust authentication and request handling make the package suitable for automated survey monitoring and downstream analysis.</p>
-<p>This package is built with robustness and efficiency in mind, aiming to streamline the workflow for researchers and data analysts who rely on SurveyCTO. By automating the retrieval of data, attachments, and server metadata, <code>ctoclient</code> allows you to focus on analysis rather than manual data management. Whether you are running daily monitoring dashboards or final impact evaluations, this tool ensures your data pipeline is reproducible and reliable.</p>
-<p>We welcome contributions from the community! If you encounter a bug, have a feature request, or want to improve the documentation, please feel free to open an issue or submit a pull request.</p>
+<p><strong><code>ctoclient</code></strong> is a modern, fast, and flexible high-level R client for the <a href="https://developer.surveycto.com/" class="external-link">SurveyCTO REST API</a>. Built on top of the robust <a href="https://httr2.r-lib.org/" class="external-link">httr2</a> framework, it provides a consistent and pipe-friendly interface for programmatic access to server resources.</p>
+<div class="section level2">
+<h2 id="why-use-ctoclient">Why use <code>ctoclient</code>?<a class="anchor" aria-label="anchor" href="#why-use-ctoclient"></a>
+</h2>
+<ul>
+<li>
+<strong>Analysis Ready:</strong> Automatically tidies messy API responses into clean data frames.</li>
+<li>
+<strong>Encrypted Data Support:</strong> Seamlessly handle encrypted forms with private keys.</li>
+<li>
+<strong>Full Resource Coverage:</strong> Manage forms, server datasets, attachments, and metadata.</li>
+<li>
+<strong>Modern Auth:</strong> Robust session handling and secure credential management.</li>
+<li>
+<strong>Extendable:</strong> Built on <code>httr2</code> request objects, allowing for easy customization and extension of API requests.</li>
+<li>
+<strong>Stata Integration:</strong> Built-in tools for generating <code>.do</code> files and templates for legacy pipelines.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="documentation-upcoming">Documentation (Upcoming)<a class="anchor" aria-label="anchor" href="#documentation-upcoming"></a>
+</h2>
+<ul>
+<li>Managing connections and sessions</li>
+<li>Working with form data</li>
+<li>Managing server data</li>
+</ul>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>You can install the stable version of ctoclient:</p>
+<p>Install the stable version from CRAN:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"ctoclient"</span><span class="op">)</span></span></code></pre></div>
-<p>or development version:</p>
+<p>Or get the development version with the latest features:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"GutUrago/ctoclient"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># or </span></span>
-<span></span>
-<span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"GutUrago/ctoclient"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"GutUrago/ctoclient"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="setup--authentication">Setup &amp; Authentication<a class="anchor" aria-label="anchor" href="#setup--authentication"></a>
+<h2 id="id_1-setup--authentication">1. Setup &amp; Authentication<a class="anchor" aria-label="anchor" href="#id_1-setup--authentication"></a>
 </h2>
-<p>To avoid hard-coding credentials in your scripts, it is highly recommended to store your SurveyCTO server details in your .Renviron file.</p>
+<p>To keep your credentials secure, <strong>never hard-code passwords</strong> in scripts. <code>ctoclient</code> supports two primary ways to authenticate:</p>
+<p><strong>1. Interactive Prompts (Recommended for Dev)</strong></p>
+<p>If you leave the password blank, <code>ctoclient</code> will securely prompt you for it in the console.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://guturago.github.io/ctoclient/">ctoclient</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/cto_connect.html">cto_connect</a></span><span class="op">(</span>server <span class="op">=</span> <span class="st">"myorg"</span>, username <span class="op">=</span> <span class="st">"admin@example.com"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>2. Environment Variables (Recommended for CI/CD)</strong></p>
+<p>To use <code>.Renviron</code> file:</p>
 <ol style="list-style-type: decimal">
 <li>Run <code>usethis::edit_r_environ()</code> to open your environment file.</li>
 <li>Add your credentials:</li>
 </ol>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">SERVER</span><span class="op">=</span><span class="st">"myorg"</span></span>
 <span><span class="va">USER</span><span class="op">=</span><span class="st">"myemail@example.com"</span></span>
 <span><span class="va">PASS</span><span class="op">=</span><span class="st">"mypassword"</span></span></code></pre></div>
 <ol start="3" style="list-style-type: decimal">
 <li>Restart R.</li>
 </ol>
-</div>
-<div class="section level2">
-<h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
-</h2>
-<div class="section level3">
-<h3 id="id_1-connect-to-the-server">1. Connect to the Server<a class="anchor" aria-label="anchor" href="#id_1-connect-to-the-server"></a>
-</h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://guturago.github.io/ctoclient/">ctoclient</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Connect using environment variables (recommended)</span></span>
-<span><span class="fu"><a href="reference/cto_connect.html">cto_connect</a></span><span class="op">(</span></span>
-<span>  server    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"SERVER"</span><span class="op">)</span>,</span>
-<span>  user      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"USER"</span><span class="op">)</span>,</span>
-<span>  password  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"PASS"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Verify connection</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="reference/cto_connect.html">cto_is_connected</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Successfully connected to SurveyCTO!"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-</div>
+<p>[!TIP] For even higher security, consider using the <a href="https://keyring.r-lib.org/" class="external-link">keyring</a> package to store passwords in your system’s secure credential store.</p>
 <div class="section level3">
 <h3 id="id_2-working-with-forms-and-data">2. Working with Forms and Data<a class="anchor" aria-label="anchor" href="#id_2-working-with-forms-and-data"></a>
 </h3>
-<p>Download form definitions, raw data, and attachments. Export functions with cto_*</p>
+<p>Download form definitions, data, and attachments.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># List all available forms</span></span>
 <span><span class="va">forms</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_metadata.html">cto_form_ids</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -120,6 +154,12 @@
 <span></span>
 <span><span class="co"># Download data for a specific form</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"myform"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Download encrypted data</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"myform"</span>, <span class="st">"mykey"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Download encrypted data in a raw format</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"myform"</span>, <span class="st">"mykey"</span>, tidy <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Download form submission medias</span></span>
 <span><span class="fu"><a href="reference/cto_form_data_attachment.html">cto_form_data_attachment</a></span><span class="op">(</span><span class="st">'myform'</span>, <span class="fu">ends_with</span><span class="op">(</span><span class="st">'_img'</span><span class="op">)</span>, <span class="st">"mykey"</span><span class="op">)</span></span>
@@ -175,6 +215,11 @@
 </div>
 </div>
 <div class="section level2">
+<h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
+</h2>
+<p>We welcome contributions! If you encounter a bug or have a feature request, please <a href="https://github.com/GutUrago/ctoclient/issues" class="external-link">open an issue</a>. Pull requests should include updated tests and documentation.</p>
+</div>
+<div class="section level2">
 <h2 id="disclaimer">Disclaimer<a class="anchor" aria-label="anchor" href="#disclaimer"></a>
 </h2>
 <p>This package is an independent, open-source project. It is not affiliated with, endorsed by, or maintained by SurveyCTO or Dobility, Inc. Use it at your own risk, and always ensure you handle survey credentials and participant data securely.</p>
@@ -208,7 +253,8 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Gutama Girja Urago <br><small class="roles"> Author, maintainer, copyright holder </small> <a href="https://orcid.org/0000-0001-5588-2301" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>
+<a href="https://guturago.github.io/about.html" class="external-link">Gutama Girja Urago</a> <br><small class="roles"> Author, maintainer, copyright holder </small> <a href="https://orcid.org/0000-0001-5588-2301" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
 </ul>
 </div>
 
@@ -216,6 +262,10 @@
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
 <li><a href="https://github.com/GutUrago/ctoclient/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/GutUrago/ctoclient/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://cran.r-project.org/package=ctoclient" class="external-link"><img src="https://www.r-pkg.org/badges/version/ctoclient" alt="CRAN status"></a></li>
+<li><a href="https://cran.r-project.org/web/checks/check_results_ctoclient.html" class="external-link"><img src="https://badges.cranchecks.info/worst/ctoclient.svg" alt="cran checks"></a></li>
+<li><a href="https://app.codecov.io/gh/GutUrago/ctoclient" class="external-link"><img src="https://codecov.io/gh/GutUrago/ctoclient/graph/badge.svg" alt="Codecov test coverage"></a></li>
+<li><a href="https://cran.r-project.org/" class="external-link"><img src="https://img.shields.io/badge/R%3E%3D-4.1.0-6666ff.svg" alt="minimal R version"></a></li>
 <li><a href="https://doi.org/10.5281/zenodo.18107568" class="external-link"><img src="https://zenodo.org/badge/1121002963.svg" alt="DOI"></a></li>
 </ul>
 </div>
@@ -225,7 +275,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Gutama Girja Urago.</p>
+  <p>Developed by <a href="https://guturago.github.io/about.html" class="external-link">Gutama Girja Urago</a>.</p>
 </div>
 
 <div class="pkgdown-footer-right">
@@ -239,5 +289,6 @@
 
 
 
-  </body>
+  
+</body>
 </html>

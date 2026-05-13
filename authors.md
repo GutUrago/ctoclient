@@ -2,13 +2,14 @@
 
 ## Authors
 
-- **Gutama Girja Urago**. Author, maintainer, copyright holder.
+- **[Gutama Girja Urago](https://guturago.github.io/about.html)**.
+  Author, maintainer, copyright holder.
   [](https://orcid.org/0000-0001-5588-2301)
 
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/guturago/ctoclient/blob/v0.1.0/inst/CITATION)
+[`inst/CITATION`](https://github.com/guturago/ctoclient/blob/main/inst/CITATION)
 
 Urago, G. G. (2026). ctoclient: A Modern and Flexible Data Pipeline for
 SurveyCTO in R. R package version 0.1.0. doi:10.5281/zenodo.18107568.
