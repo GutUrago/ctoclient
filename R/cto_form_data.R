@@ -160,8 +160,8 @@ cto_form_data <- function(
             TRUE
           ),
           is_slt_multi = grepl("^select_multiple", .data$type, TRUE),
-          is_date = grepl("^date$|^today", .data$type, TRUE),
-          is_datetime = grepl("^datetime|^start|^end$", .data$type, TRUE),
+          is_date = grepl("^date$|^today$", .data$type, TRUE),
+          is_datetime = grepl("^datetime$|^start$|^end$", .data$type, TRUE),
           is_null_fields = grepl(
             "^note|^begin group|^end group|^end repeat",
             .data$type,
