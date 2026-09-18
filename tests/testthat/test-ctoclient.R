@@ -1,9 +1,21 @@
 
-if (Sys.getenv("SERVER") != "") {
+# Recorded fixtures are replayed offline, so this file runs everywhere
+# httptest2 is available. It is a suggested package, so guard its use.
+
+if (requireNamespace("httptest2", quietly = TRUE)) {
 
   library(httptest2)
 
+  # Only used when re-recording fixtures against a live server. The defaults
+  # are placeholders: during replay the redactor strips the server name from
+  # every URL, so the values below never reach the network.
+  cto_server <- Sys.getenv("CTO_SERVER", "sctopackagetest")
+  cto_user <- Sys.getenv("CTO_USER", "user@example.com")
+  cto_pass <- Sys.getenv("CTO_PASS", "password")
+
   set_redactor(function(x) {
+    x <- redact_cookies(x)                    # httptest2 default, kept
+    x <- redact_headers(x, "x-csrf-token")    # Session token, never recorded
     x$url <- gsub("\\?t=[0-9]+", "", x$url)   # This is dynamic
     x$url <- gsub("\\?.*$", "", x$url)        # Hard to capture queries
     x$url <- gsub("[^/]+\\.surveycto\\.com", "", x$url)
@@ -23,14 +35,14 @@ if (Sys.getenv("SERVER") != "") {
       "Authentication works with and without cookies",
       {
         with_cookies <- cto_connect(
-          Sys.getenv("SERVER"),
-          Sys.getenv("USER"),
-          Sys.getenv("PASS")
+          cto_server,
+          cto_user,
+          cto_pass
         )
         without_cookies <- cto_connect(
-          Sys.getenv("SERVER"),
-          Sys.getenv("USER"),
-          Sys.getenv("PASS"),
+          cto_server,
+          cto_user,
+          cto_pass,
           FALSE
         )
         expect_true(cto_is_connected())
@@ -39,7 +51,6 @@ if (Sys.getenv("SERVER") != "") {
         cto_set_connection(with_cookies)
         expect_no_error(confirm_cookies())
         expect_error(cto_set_connection("invalid"))
-        writeLines("", "_connect/NA.html")
       })
   )
 
@@ -59,6 +70,8 @@ if (Sys.getenv("SERVER") != "") {
   )
 
   #---- DATASETS ----
+  # Deleting a mock directory puts these blocks back into recording mode, which
+  # creates, uploads, purges and deletes a dataset on the live server.
   with_mock_dir(
     "_datasets",
     test_that(
@@ -110,13 +123,20 @@ if (Sys.getenv("SERVER") != "") {
     )
   )
 
-  if (cto_is_connected()) {
-    test_that(
-      "Non portable file",
-      expect_no_error(cto_form_dofile("locating_households"))
-    )
-  }
+  # ---- LIVE SERVER ONLY ----
+  # cto_form_dofile() reads the XLSForm definition, and httptest2 has no
+  # fixture format for a workbook, so this one needs a real server.
 
+  test_that(
+    "Stata do-file is generated",
+    {
+      skip_if_not(
+        nzchar(Sys.getenv("CTO_SERVER")),
+        "CTO_SERVER is not set"
+      )
+      cto_connect(cto_server, cto_user, cto_pass)
+      expect_no_error(cto_form_dofile("locating_households"))
+    }
+  )
 
 }
-
