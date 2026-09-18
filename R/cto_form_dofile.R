@@ -296,9 +296,9 @@ cto_form_dofile <- function(form_id, path = NULL) {
             "\t\t\tcap label variable `var' \"",
             v,
             "\"\n",
-            "\t\t\tcap note `var': \"",
+            "\t\t\tcap note `var': ",
             vn,
-            "\"\n",
+            "\n",
             "\t\t\tcap destring `var', replace\n",
             "\t\t\tcap label values `var' slt_multi_binary\n"
           )
@@ -363,9 +363,9 @@ cto_form_dofile <- function(form_id, path = NULL) {
         "\t\t\tcap label variable `var' \"",
         .data$var_label,
         "\"\n",
-        "\t\t\tcap note `var': \"",
+        "\t\t\tcap note `var': ",
         .data$var_note,
-        "\"\n",
+        "\n",
         ifelse(
           .data$has_list,
           paste0(
@@ -399,9 +399,8 @@ cto_form_dofile <- function(form_id, path = NULL) {
         "\"\n",
         "cap note ",
         .data$name,
-        ": \"",
+        ": ",
         .data$var_note,
-        "\"",
         ifelse(
           .data$has_list,
           paste0(

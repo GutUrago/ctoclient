@@ -117,8 +117,12 @@ test_that(
   {
     out <- paste(dofile(), collapse = "\n")
 
-    expect_match(out, "cap note hh_size:", fixed = TRUE)
+    expect_match(out, "cap note hh_size: Household size", fixed = TRUE)
     expect_no_match(out, "cap note variable", fixed = TRUE)
+    # the text after the colon is literal, so quotes would be stored as
+    # part of the note
+    expect_no_match(out, "cap note hh_size: \"", fixed = TRUE)
+    expect_no_match(out, "cap note `var': \"", fixed = TRUE)
   }
 )
 
