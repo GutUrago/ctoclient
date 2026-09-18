@@ -71,6 +71,15 @@ cto_connect <- function(
   assert_string(username)
   assert_string(password, null.ok = TRUE)
   assert_flag(cookies)
+  assert_url_safe(server, "server")
+
+  if (grepl("\\.surveycto\\.com$", server, ignore.case = TRUE)) {
+    cli_warn(c(
+      "!" = "{.arg server} looks like a full host name.",
+      "i" = "Use the server name only, such as {.val myserver} instead of
+             {.val myserver.surveycto.com}."
+    ))
+  }
 
   if (get_verbose()) {
     cli_progress_step(

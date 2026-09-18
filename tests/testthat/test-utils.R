@@ -97,3 +97,56 @@ test_that(
     expect_identical(drop_nulls_recursive("a"), "a")
   }
 )
+
+
+# ---- assert_url_safe() ----
+
+test_that(
+  "assert_url_safe() accepts names a server may legitimately use",
+  {
+    expect_true(assert_url_safe("sctopackagetest", "server"))
+    expect_true(assert_url_safe("my-org", "server"))
+    expect_true(assert_url_safe("my_org", "server"))
+    expect_true(assert_url_safe("MyOrg", "server"))
+    expect_true(assert_url_safe(c("hh_listing", "sample.cases"), "id"))
+  }
+)
+
+test_that(
+  "assert_url_safe() rejects characters that change the URL structure",
+  {
+    expect_error(assert_url_safe("evil.com/#", "server"), "must not contain", fixed = TRUE)
+    expect_error(assert_url_safe("a?b", "server"), "must not contain", fixed = TRUE)
+    expect_error(assert_url_safe("a#b", "server"), "must not contain", fixed = TRUE)
+    expect_error(assert_url_safe("a/b", "id"), "must not contain", fixed = TRUE)
+    expect_error(assert_url_safe("a b", "id"), "must not contain", fixed = TRUE)
+    expect_error(assert_url_safe("host:8080", "server"), "must not contain", fixed = TRUE)
+    expect_error(assert_url_safe("user@host", "server"), "must not contain", fixed = TRUE)
+  }
+)
+
+test_that(
+  "assert_url_safe() rejects empty and missing values",
+  {
+    expect_error(assert_url_safe("", "id"))
+    expect_error(assert_url_safe(NA_character_, "id"))
+  }
+)
+
+test_that(
+  "assert_url_safe() names the offending element",
+  {
+    expect_error(assert_url_safe(c("good", "al/so"), "id"), "al/so", fixed = TRUE)
+  }
+)
+
+test_that(
+  "cto_connect() rejects an unsafe server before contacting the network",
+  {
+    expect_error(
+      cto_connect("evil.com/#", "user", "pass"),
+      "must not contain",
+      fixed = TRUE
+    )
+  }
+)

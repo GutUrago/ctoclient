@@ -56,6 +56,27 @@ drop_nulls_recursive <- function(x) {
   Filter(function(z) !is.null(z) && !(is.list(z) && length(z) == 0), x)
 }
 
+# Assert URL-safe identifiers ----
+# Rejects only the characters that can change the structure of a URL. This is
+# deliberately not an allow-list: SurveyCTO does not document which characters
+# a server or dataset name may contain, and none of the characters below are
+# legal in a host name or in a SurveyCTO identifier.
+assert_url_safe <- function(x, arg = "id") {
+  checkmate::assert_character(x, min.chars = 1, any.missing = FALSE)
+  unsafe <- grepl("[/\\\\?#@:[:space:]]", x)
+  if (any(unsafe)) {
+    cli_abort(
+      c(
+        "x" = "{.arg {arg}} must not contain {.val /}, {.val \\}, {.val ?},
+               {.val #}, {.val @}, {.val :} or spaces.",
+        "i" = "Problem with {.val {x[unsafe]}}."
+      ),
+      call = rlang::caller_env()
+    )
+  }
+  invisible(TRUE)
+}
+
 # Assert form IDs ----
 assert_form_id <- function(form_id) {
   checkmate::assert_string(form_id)
