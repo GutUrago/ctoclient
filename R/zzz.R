@@ -2,7 +2,7 @@
 #' @importFrom stringr str_c str_glue str_extract str_squish str_replace_all str_remove_all
 #' @importFrom httr2 req_url req_url_path req_url_query req_perform resp_body_json resp_body_raw
 #' @importFrom checkmate assert_string assert_flag assert_character assert_directory
-#' @importFrom rlang `:=` .data
+#' @importFrom rlang .data
 #' @importFrom dplyr mutate select across
 #' @importFrom tidyr matches all_of any_of everything
 NULL

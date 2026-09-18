@@ -67,11 +67,11 @@ settings <- read_excel(file_path, sheet = "settings")
 }
 }
 \seealso{
-Other Form Management Functions: 
-\code{\link{cto_form_attachment}()},
-\code{\link{cto_form_data}()},
-\code{\link{cto_form_data_attachment}()},
-\code{\link{cto_form_dofile}()},
-\code{\link{cto_form_languages}()}
+Other Form Management Functions:
+\code{\link[=cto_form_attachment]{cto_form_attachment()}},
+\code{\link[=cto_form_data]{cto_form_data()}},
+\code{\link[=cto_form_data_attachment]{cto_form_data_attachment()}},
+\code{\link[=cto_form_dofile]{cto_form_dofile()}},
+\code{\link[=cto_form_languages]{cto_form_languages()}}
 }
 \concept{Form Management Functions}

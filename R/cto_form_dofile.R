@@ -75,7 +75,7 @@ cto_form_dofile <- function(form_id, path = NULL) {
   # --- 1. Header Generation ---
   ts <- format(Sys.time(), format = '%b %d, %Y at %H:%M %Z')
   t1 <- center_text(str_glue("{toupper(form_id)} VARIABLE AND VALUE LABELS"))
-  t2 <- center_text(str_glue("Generated on {ts} by 'scto' Package in R"))
+  t2 <- center_text(str_glue("Generated on {ts} by 'ctoclient' Package in R"))
 
   header_content <- str_glue(
     strrep("*", 80),
@@ -152,7 +152,7 @@ cto_form_dofile <- function(form_id, path = NULL) {
     dplyr::filter(
       !is.na(.data$value),
       !grepl("^\\$\\{.*\\}$", .data$label_clean)
-      )
+    )
 
   # Generate 'label define' commands for select_one
   choice_sets_s1 <- choices_all |>

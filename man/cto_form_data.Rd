@@ -73,11 +73,11 @@ clean <- cto_form_data("my_form_id", private_key = "keys/my_key.pem")
 }
 }
 \seealso{
-Other Form Management Functions: 
-\code{\link{cto_form_attachment}()},
-\code{\link{cto_form_data_attachment}()},
-\code{\link{cto_form_dofile}()},
-\code{\link{cto_form_languages}()},
-\code{\link{cto_form_metadata}()}
+Other Form Management Functions:
+\code{\link[=cto_form_attachment]{cto_form_attachment()}},
+\code{\link[=cto_form_data_attachment]{cto_form_data_attachment()}},
+\code{\link[=cto_form_dofile]{cto_form_dofile()}},
+\code{\link[=cto_form_languages]{cto_form_languages()}},
+\code{\link[=cto_form_metadata]{cto_form_metadata()}}
 }
 \concept{Form Management Functions}

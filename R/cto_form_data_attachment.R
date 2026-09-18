@@ -26,6 +26,7 @@
 #'   of downloading files to the local disk.
 #'
 #' @family Form Management Functions
+#' @export
 #'
 #' @examples
 #' \dontrun{

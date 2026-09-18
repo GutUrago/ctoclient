@@ -55,11 +55,11 @@ cmds <- cto_form_dofile("household_survey")
 }
 }
 \seealso{
-Other Form Management Functions: 
-\code{\link{cto_form_attachment}()},
-\code{\link{cto_form_data}()},
-\code{\link{cto_form_data_attachment}()},
-\code{\link{cto_form_languages}()},
-\code{\link{cto_form_metadata}()}
+Other Form Management Functions:
+\code{\link[=cto_form_attachment]{cto_form_attachment()}},
+\code{\link[=cto_form_data]{cto_form_data()}},
+\code{\link[=cto_form_data_attachment]{cto_form_data_attachment()}},
+\code{\link[=cto_form_languages]{cto_form_languages()}},
+\code{\link[=cto_form_metadata]{cto_form_metadata()}}
 }
 \concept{Form Management Functions}
