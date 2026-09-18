@@ -64,12 +64,14 @@ cto_form_dofile <- function(form_id, path = NULL) {
     settings = readxl::read_excel(fp, sheet = "settings")
   )
 
-  if (!is.null(path)) {
-    cli_progress_step(
-      "Writing {.val {form_id}} Stata do-file to {.file {path}}"
-    )
-  } else {
-    cli_progress_step("Writing {.val {form_id}} Stata do-file")
+  if (verbose) {
+    if (!is.null(path)) {
+      cli_progress_step(
+        "Writing {.val {form_id}} Stata do-file to {.file {path}}"
+      )
+    } else {
+      cli_progress_step("Writing {.val {form_id}} Stata do-file")
+    }
   }
 
   # --- 1. Header Generation ---
@@ -192,19 +194,11 @@ cto_form_dofile <- function(form_id, path = NULL) {
   names(multi_lookup) <- purrr::map_chr(multi_lookup, ~ .x$list_name[1])
 
   # --- 4b. Date and Time Fields ---
-  dt_names <- str_squish(survey$name)
-  dt_types <- str_squish(survey$type)
-
-  datetime_vars <- unique(c(
-    "CompletionDate",
-    "SubmissionDate",
-    dt_names[grepl("^datetime$|^start$|^end$", dt_types, TRUE)]
-  ))
-  date_vars <- unique(dt_names[grepl("^date$|^today$", dt_types, TRUE)])
+  dt_vars <- form_datetime_vars(survey$name, survey$type)
 
   datetime_block <- build_datetime_block(
-    datetime_vars[!is.na(datetime_vars)],
-    date_vars[!is.na(date_vars)],
+    dt_vars$datetime,
+    dt_vars$date,
     format(Sys.time(), "%Y")
   )
 
@@ -234,6 +228,7 @@ cto_form_dofile <- function(form_id, path = NULL) {
 
       is_repeat = .data$repeat_level > 0,
       is_slt_multi = grepl("^select_multiple", .data$type, TRUE),
+      is_num_type = grepl("^integer$|^decimal$", .data$type, TRUE),
       list_name_raw = str_extract(.data$type, "(?<= )\\S+"),
       list_name = ifelse(
         .data$is_slt_multi,
@@ -360,6 +355,11 @@ cto_form_dofile <- function(form_id, path = NULL) {
         "\t\tif regexm(\"`var'\", \"",
         .data$regex_varname,
         "\") {\n",
+        ifelse(
+          .data$is_num_type,
+          "\t\t\tcap destring `var', replace\n",
+          ""
+        ),
         "\t\t\tcap label variable `var' \"",
         .data$var_label,
         "\"\n",
@@ -387,6 +387,11 @@ cto_form_dofile <- function(form_id, path = NULL) {
     dplyr::filter(!.data$is_slt_multi & !.data$is_repeat) |>
     mutate(
       stata_cmd = str_c(
+        ifelse(
+          .data$is_num_type,
+          paste0("cap destring ", .data$name, ", replace\n"),
+          ""
+        ),
         "cap label variable ",
         .data$name,
         " \"",

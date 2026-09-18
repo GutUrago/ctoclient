@@ -150,6 +150,26 @@ stata_escape_label <- function(x) {
     str_replace_all('"', "'")
 }
 
+# Date and datetime variables of a form definition ----
+# CompletionDate and SubmissionDate are review metadata: they never appear on
+# the survey sheet but are always exported, so they join the datetime list.
+form_datetime_vars <- function(name, type) {
+  name <- str_squish(name)
+  type <- str_squish(type)
+
+  datetime <- unique(c(
+    "CompletionDate",
+    "SubmissionDate",
+    name[grepl("^datetime$|^start$|^end$", type, TRUE)]
+  ))
+  date <- unique(name[grepl("^date$|^today$", type, TRUE)])
+
+  list(
+    datetime = datetime[!is.na(datetime)],
+    date = date[!is.na(date)]
+  )
+}
+
 # Stata block converting exported string dates to numeric ----
 build_datetime_block <- function(datetime_vars, date_vars, topyear) {
   loop <- function(vars, fn, mask, fmt) {
