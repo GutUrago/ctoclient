@@ -111,17 +111,79 @@ fetch_api_response <- function(req, url_path = NULL, file_path = NULL) {
 }
 
 # Fetch paginated json ----
-fetch_paginated_response <- function(req, path, field = "data") {
+fetch_paginated_response <- function(req, path, field = "data", max_pages = 1000) {
   resp <- fetch_api_response(req, path)
   out <- purrr::pluck(resp, field)
   cursor <- purrr::pluck(resp, "nextCursor")
+  page <- 1L
+
   while (!is.null(cursor)) {
+    if (page >= max_pages) {
+      cli_warn("Stopped after {max_pages} pages of {.val {path}}.")
+      break
+    }
     req <- req_url_query(req, cursor = cursor)
     resp <- fetch_api_response(req, path)
     out <- dplyr::bind_rows(out, purrr::pluck(resp, field))
+
+    previous <- cursor
     cursor <- purrr::pluck(resp, "nextCursor")
+    # A server that keeps handing back the same cursor would loop forever.
+    if (identical(cursor, previous)) {
+      cli_warn("{.val {path}} returned the same cursor twice; stopping.")
+      break
+    }
+    page <- page + 1L
   }
+
   return(out)
+}
+
+# Split geopoint columns ----
+# The raw geopoint is always kept. `separate_wider_delim()` with `names_sep`
+# renames the column it retains to "<col>_<col>", so restore the original
+# name afterwards.
+split_gps_columns <- function(data, gps_fields) {
+  if (length(gps_fields) == 0) {
+    return(data)
+  }
+
+  nms <- names(data)
+  suffix <- c("lat", "long", "alt", "acc")
+
+  keep_idx <- sapply(gps_fields, function(pattern) {
+    actual_col <- grep(pattern, nms, value = TRUE)
+    if (length(actual_col) == 0) {
+      return(FALSE)
+    }
+    check_fld <- paste0(actual_col[1], "_", suffix[1])
+    !(check_fld %in% nms)
+  })
+  gps_fields <- gps_fields[keep_idx]
+
+  if (length(gps_fields) == 0) {
+    return(data)
+  }
+
+  out <- tidyr::separate_wider_delim(
+    data = data,
+    cols = matches(gps_fields),
+    delim = " ",
+    names = suffix,
+    names_sep = "_",
+    too_few = "align_start",
+    # A malformed point must not abort the split for every other column.
+    too_many = "drop",
+    cols_remove = FALSE
+  )
+
+  kept <- paste0(nms, "_", nms)
+  restore <- kept %in% names(out) & !(nms %in% names(out))
+  if (any(restore)) {
+    names(out)[match(kept[restore], names(out))] <- nms[restore]
+  }
+
+  out
 }
 
 # Center text -----

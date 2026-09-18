@@ -62,7 +62,7 @@ cto_form_data_attachment <- function(
 
   df <- cto_form_data(form_id, private_key = private_key, tidy = FALSE)
 
-  if (length(df) == 0) {
+  if (NROW(df) == 0) {
     cli_warn("There is no submission for {col_blue(form_id)} form.")
     return(invisible())
   }

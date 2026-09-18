@@ -105,7 +105,7 @@ cto_form_data <- function(
   }
   raw_data <- fetch_api_response(session, url_path)
 
-  if (length(raw_data) == 0) {
+  if (NROW(raw_data) == 0) {
     cli_warn("No submissions were found for {col_blue(form_id)} form")
     return(raw_data)
   }
@@ -160,7 +160,7 @@ cto_form_data <- function(
             TRUE
           ),
           is_slt_multi = grepl("^select_multiple", .data$type, TRUE),
-          is_date = grepl("^date|^today", .data$type, TRUE),
+          is_date = grepl("^date$|^today", .data$type, TRUE),
           is_datetime = grepl("^datetime|^start|^end$", .data$type, TRUE),
           is_null_fields = grepl(
             "^note|^begin group|^end group|^end repeat",
@@ -233,7 +233,7 @@ cto_form_data <- function(
         dplyr::right_join(
           survey |>
             dplyr::filter(!is.na(.data$multi_select)) |>
-            mutate(list_name = str_extract(.data$type, "\\S+$")) |>
+            mutate(list_name = str_extract(.data$type, "(?<= )\\S+")) |>
             select("name", "list_name", "multi_select"),
           by = "list_name",
           relationship = "many-to-many"
@@ -348,17 +348,19 @@ cto_form_data <- function(
             }
             df |>
               dplyr::mutate(
-                any_selected = dplyr::if_any(dplyr::all_of(cols), ~ .x == "1"),
+                # Leading dot: XLSForm names cannot start with one, so this
+                # cannot overwrite a question of the same name.
+                .any_selected = dplyr::if_any(dplyr::all_of(cols), ~ .x == "1"),
                 dplyr::across(
                   dplyr::all_of(cols),
                   ~ dplyr::if_else(
-                    .data$any_selected,
+                    .data$.any_selected,
                     dplyr::coalesce(.x, "0"),
                     .x
                   )
                 )
               ) |>
-              dplyr::select(!"any_selected")
+              dplyr::select(!".any_selected")
           },
           .init = tidy_data
         )
@@ -443,35 +445,7 @@ cto_form_data <- function(
   )
 
   tidy_data <- tryCatch(
-    {
-      if (length(gps_fields) > 0) {
-        nms <- names(tidy_data)
-        suffix <- c("lat", "long", "alt", "acc")
-        keep_idx <- sapply(gps_fields, function(pattern) {
-          actual_col <- grep(pattern, nms, value = TRUE)
-          if (length(actual_col) == 0) {
-            return(FALSE)
-          }
-          check_fld <- paste0(actual_col[1], "_", suffix[1])
-          !(check_fld %in% nms)
-        })
-        gps_fields <- gps_fields[keep_idx]
-      }
-
-      if (length(gps_fields) > 0) {
-        tidyr::separate_wider_delim(
-          data = tidy_data,
-          cols = matches(gps_fields),
-          delim = " ",
-          names = c("lat", "long", "alt", "acc"),
-          names_sep = "_",
-          too_few = "align_start",
-          cols_remove = FALSE
-        )
-      } else {
-        tidy_data
-      }
-    },
+    split_gps_columns(tidy_data, gps_fields),
     error = function(e) {
       message(paste("Failed to split gps columns:", conditionMessage(e)))
       tidy_data

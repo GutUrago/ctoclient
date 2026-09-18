@@ -150,3 +150,124 @@ test_that(
     )
   }
 )
+
+
+# ---- split_gps_columns() ----
+
+test_that(
+  "split_gps_columns() keeps the raw geopoint under its own name",
+  {
+    d <- data.frame(
+      id = 1:2,
+      gps = c("9.0 38.7 2355 4.9", "9.1 38.8 2360 5.0"),
+      stringsAsFactors = FALSE
+    )
+    out <- split_gps_columns(d, "^gps$")
+
+    expect_true("gps" %in% names(out))
+    expect_identical(out$gps, d$gps)
+    expect_false(any(grepl("gps_gps", names(out))))
+    expect_true(all(c("gps_lat", "gps_long", "gps_alt", "gps_acc") %in% names(out)))
+    expect_identical(out$gps_lat, c("9.0", "9.1"))
+  }
+)
+
+test_that(
+  "split_gps_columns() handles several geopoints at once",
+  {
+    d <- data.frame(
+      gps = c("9.0 38.7 2355 4.9"),
+      plot_gps = c("8.1 39.2 1800 6.0"),
+      stringsAsFactors = FALSE
+    )
+    out <- split_gps_columns(d, c("^gps$", "^plot_gps$"))
+
+    expect_identical(out$gps, d$gps)
+    expect_identical(out$plot_gps, d$plot_gps)
+    expect_identical(out$plot_gps_long, "39.2")
+  }
+)
+
+test_that(
+  "split_gps_columns() survives a malformed point",
+  {
+    d <- data.frame(
+      gps = c("9.0 38.7 2355 4.9", "9.0 38.7 2355 4.9 99", "9.0 38.7"),
+      stringsAsFactors = FALSE
+    )
+    out <- expect_no_error(split_gps_columns(d, "^gps$"))
+
+    expect_identical(out$gps, d$gps)
+    expect_identical(out$gps_lat, c("9.0", "9.0", "9.0"))
+    expect_true(is.na(out$gps_acc[3]))
+  }
+)
+
+test_that(
+  "split_gps_columns() returns the data untouched when there is nothing to split",
+  {
+    d <- data.frame(id = 1:2, name = c("a", "b"), stringsAsFactors = FALSE)
+    expect_identical(split_gps_columns(d, character(0)), d)
+    expect_identical(split_gps_columns(d, "^gps$"), d)
+  }
+)
+
+
+# ---- fetch_paginated_response() ----
+
+test_that(
+  "fetch_paginated_response() follows the cursor to the end",
+  {
+    calls <- 0L
+    local_mocked_bindings(
+      fetch_api_response = function(req, url_path = NULL, file_path = NULL) {
+        calls <<- calls + 1L
+        if (calls == 1L) {
+          list(data = data.frame(i = 1L), nextCursor = "c1")
+        } else {
+          list(data = data.frame(i = 2L), nextCursor = NULL)
+        }
+      }
+    )
+    out <- fetch_paginated_response(httr2::request("https://example.com"), "x")
+
+    expect_equal(nrow(out), 2L)
+    expect_equal(calls, 2L)
+  }
+)
+
+test_that(
+  "fetch_paginated_response() stops when the cursor stops advancing",
+  {
+    calls <- 0L
+    local_mocked_bindings(
+      fetch_api_response = function(req, url_path = NULL, file_path = NULL) {
+        calls <<- calls + 1L
+        list(data = data.frame(i = calls), nextCursor = "stuck")
+      }
+    )
+    expect_warning(
+      fetch_paginated_response(httr2::request("https://example.com"), "x"),
+      "same cursor"
+    )
+    expect_lt(calls, 5L)
+  }
+)
+
+test_that(
+  "fetch_paginated_response() stops at max_pages",
+  {
+    calls <- 0L
+    local_mocked_bindings(
+      fetch_api_response = function(req, url_path = NULL, file_path = NULL) {
+        calls <<- calls + 1L
+        list(data = data.frame(i = calls), nextCursor = paste0("c", calls))
+      }
+    )
+    expect_warning(
+      fetch_paginated_response(httr2::request("https://example.com"), "x", max_pages = 3),
+      "Stopped after"
+    )
+    expect_equal(calls, 3L)
+  }
+)
