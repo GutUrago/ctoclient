@@ -271,3 +271,63 @@ test_that(
     expect_equal(calls, 3L)
   }
 )
+
+
+# ---- stata_escape_label() ----
+
+test_that(
+  "stata_escape_label() neutralises Stata macro syntax",
+  {
+    expect_identical(stata_escape_label("Cost ($USD)"), "Cost (\\$USD)")
+    expect_identical(stata_escape_label("${calculated}"), "\\${calculated}")
+    expect_identical(stata_escape_label("a `b` c"), "a 'b' c")
+    expect_identical(stata_escape_label('He said "hi"'), "He said 'hi'")
+    expect_identical(stata_escape_label("<b>Bold</b> text"), "Bold text")
+    expect_identical(stata_escape_label("Plain label"), "Plain label")
+  }
+)
+
+
+# ---- build_datetime_block() ----
+
+test_that(
+  "build_datetime_block() uses clock/%tc for datetimes and date/%td for dates",
+  {
+    out <- build_datetime_block("SubmissionDate", "visit_date", "2026")
+
+    expect_true(any(grepl("local dtvarlist SubmissionDate", out, fixed = TRUE)))
+    expect_true(any(grepl("clock(`tempdtvar',\"MDYhms\",2026)", out, fixed = TRUE)))
+    expect_true(any(grepl("format %tc `dtvar'", out, fixed = TRUE)))
+
+    expect_true(any(grepl("local dtvarlist visit_date", out, fixed = TRUE)))
+    expect_true(any(grepl("date(`tempdtvar',\"MDY\",2026)", out, fixed = TRUE)))
+    expect_true(any(grepl("format %td `dtvar'", out, fixed = TRUE)))
+  }
+)
+
+test_that(
+  "build_datetime_block() skips variables the dataset does not have",
+  {
+    out <- build_datetime_block("SubmissionDate", character(0), "2026")
+
+    expect_true(any(grepl("cap confirm variable `dtvar'", out, fixed = TRUE)))
+    expect_true(any(grepl("if !_rc {", out, fixed = TRUE)))
+  }
+)
+
+test_that(
+  "build_datetime_block() emits only the lists it is given",
+  {
+    expect_length(build_datetime_block(character(0), character(0), "2026"), 0)
+    expect_false(any(grepl("clock(", build_datetime_block(character(0), "today", "2026"), fixed = TRUE)))
+    expect_false(any(grepl("date(", build_datetime_block("endtime", character(0), "2026"), fixed = TRUE)))
+  }
+)
+
+test_that(
+  "build_datetime_block() lists several variables in one local",
+  {
+    out <- build_datetime_block(c("SubmissionDate", "starttime", "endtime"), character(0), "2026")
+    expect_true(any(grepl("local dtvarlist SubmissionDate starttime endtime", out, fixed = TRUE)))
+  }
+)

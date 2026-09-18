@@ -139,6 +139,46 @@ fetch_paginated_response <- function(req, path, field = "data", max_pages = 1000
   return(out)
 }
 
+# Escape a label for use inside a Stata double-quoted string ----
+# Stata expands $global and `local' references inside double quotes, so a
+# label such as "Cost ($USD)" would otherwise come out as "Cost ()".
+stata_escape_label <- function(x) {
+  x |>
+    str_remove_all("<[^<>]*>") |>
+    str_replace_all(stringr::fixed("$"), "\\$") |>
+    str_replace_all(stringr::fixed("`"), "'") |>
+    str_replace_all('"', "'")
+}
+
+# Stata block converting exported string dates to numeric ----
+build_datetime_block <- function(datetime_vars, date_vars, topyear) {
+  loop <- function(vars, fn, mask, fmt) {
+    if (length(vars) == 0) {
+      return(character(0))
+    }
+    c(
+      str_glue("\tlocal dtvarlist {paste(vars, collapse = ' ')}"),
+      "\tforeach dtvar in `dtvarlist' {",
+      "\t\tcap confirm variable `dtvar'",
+      "\t\tif !_rc {",
+      "\t\t\ttempvar tempdtvar",
+      "\t\t\trename `dtvar' `tempdtvar'",
+      "\t\t\tgen double `dtvar'=., after(`tempdtvar')",
+      str_glue("\t\t\tcap replace `dtvar'={fn}(`tempdtvar',\"{mask}\",{topyear})"),
+      str_glue("\t\t\tformat {fmt} `dtvar'"),
+      "\t\t\tdrop `tempdtvar'",
+      "\t\t}",
+      "\t}",
+      ""
+    )
+  }
+
+  c(
+    loop(datetime_vars, "clock", "MDYhms", "%tc"),
+    loop(date_vars, "date", "MDY", "%td")
+  )
+}
+
 # Split geopoint columns ----
 # The raw geopoint is always kept. `separate_wider_delim()` with `names_sep`
 # renames the column it retains to "<col>_<col>", so restore the original

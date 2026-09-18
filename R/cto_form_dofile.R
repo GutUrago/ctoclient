@@ -95,7 +95,7 @@ cto_form_dofile <- function(form_id, path = NULL) {
     }
 
     if (length(matches) > 1) {
-      default_lang <- form$settings$default_language
+      default_lang <- form$settings$default_language[1]
       dl <- if (
         is.null(default_lang) || is.na(default_lang) || default_lang == ""
       ) {
@@ -103,7 +103,11 @@ cto_form_dofile <- function(form_id, path = NULL) {
       } else {
         default_lang
       }
-      matches_lang <- matches[grepl(dl, matches, TRUE)]
+      # SurveyCTO writes the default language as "English (en)", so `dl` has
+      # to be matched literally rather than as a regular expression.
+      matches_lang <- matches[
+        stringr::str_detect(matches, stringr::fixed(dl, ignore_case = TRUE))
+      ]
       if (length(matches_lang) > 0) {
         return(matches_lang[1])
       }
@@ -144,14 +148,15 @@ cto_form_dofile <- function(form_id, path = NULL) {
     mutate(
       value = suppressWarnings(as.numeric(.data$value)),
       list_name = str_squish(.data$list_name),
-      label_clean = .data[[val_label_col]] |>
-        str_remove_all("<[^<>]*>") |>
-        str_replace_all('"', "'") |>
+      label_clean = stata_escape_label(.data[[val_label_col]]) |>
         str_squish()
     ) |>
     dplyr::filter(
       !is.na(.data$value),
-      !grepl("^\\$\\{.*\\}$", .data$label_clean)
+      # Stata value labels take integers only.
+      .data$value == round(.data$value),
+      !is.na(.data$label_clean),
+      !grepl("^\\\\\\$\\{.*\\}$", .data$label_clean)
     )
 
   # Generate 'label define' commands for select_one
@@ -159,7 +164,7 @@ cto_form_dofile <- function(form_id, path = NULL) {
     dplyr::filter(.data$list_name %in% valid_choices_s1) |>
     dplyr::summarise(
       stata_cmd = paste0(
-        'label define ',
+        'cap label define ',
         dplyr::first(.data$list_name),
         ' ',
         paste0(.data$value, ' "', .data$label_clean, '"', collapse = " "),
@@ -181,9 +186,27 @@ cto_form_dofile <- function(form_id, path = NULL) {
     ) |>
     dplyr::group_split(.data$list_name)
 
-  names(multi_lookup) <- sort(unique(choices_all$list_name[
-    choices_all$list_name %in% valid_choices_sm
-  ]))
+  # Take the names from the groups themselves: group_split() and sort() do
+  # not agree once list names mix case, which silently attached one list's
+  # labels to another list's variables.
+  names(multi_lookup) <- purrr::map_chr(multi_lookup, ~ .x$list_name[1])
+
+  # --- 4b. Date and Time Fields ---
+  dt_names <- str_squish(survey$name)
+  dt_types <- str_squish(survey$type)
+
+  datetime_vars <- unique(c(
+    "CompletionDate",
+    "SubmissionDate",
+    dt_names[grepl("^datetime$|^start$|^end$", dt_types, TRUE)]
+  ))
+  date_vars <- unique(dt_names[grepl("^date$|^today$", dt_types, TRUE)])
+
+  datetime_block <- build_datetime_block(
+    datetime_vars[!is.na(datetime_vars)],
+    date_vars[!is.na(date_vars)],
+    format(Sys.time(), "%Y")
+  )
 
   # --- 5. Process Variables ---
 
@@ -237,10 +260,7 @@ cto_form_dofile <- function(form_id, path = NULL) {
       ),
 
       # Efficient cleaning of the label column
-      cleaned_label = .data[[var_label_col]] |>
-        str_remove_all("<[^<>]*>") |>
-        str_replace_all(stringr::fixed("${"), "\\${") |>
-        str_replace_all('"', "'") |>
+      cleaned_label = stata_escape_label(.data[[var_label_col]]) |>
         str_replace_all("\\\n", " ") |>
         str_squish(),
 
@@ -284,6 +304,7 @@ cto_form_dofile <- function(form_id, path = NULL) {
             "\t\t\tcap note `var': \"",
             vn,
             "\"\n",
+            "\t\t\tcap destring `var', replace\n",
             "\t\t\tcap label values `var' slt_multi_binary\n"
           )
 
@@ -347,7 +368,12 @@ cto_form_dofile <- function(form_id, path = NULL) {
         "\"\n",
         ifelse(
           .data$has_list,
-          paste0("\t\t\tcap label values `var' ", .data$list_name, "\n"),
+          paste0(
+            "\t\t\tcap destring `var', replace\n",
+            "\t\t\tcap label values `var' ",
+            .data$list_name,
+            "\n"
+          ),
           ""
         ),
         "\t\t}\n",
@@ -366,14 +392,22 @@ cto_form_dofile <- function(form_id, path = NULL) {
         " \"",
         .data$var_label,
         "\"\n",
-        "cap note variable ",
+        "cap note ",
         .data$name,
-        " \"",
+        ": \"",
         .data$var_note,
         "\"",
         ifelse(
           .data$has_list,
-          paste0("\ncap label values ", .data$name, " ", .data$list_name),
+          paste0(
+            "\ncap destring ",
+            .data$name,
+            ", replace",
+            "\ncap label values ",
+            .data$name,
+            " ",
+            .data$list_name
+          ),
           ""
         )
       )
@@ -387,6 +421,14 @@ cto_form_dofile <- function(form_id, path = NULL) {
 
   do_file_content <- c(
     header_content,
+    if (length(datetime_block) > 0) {
+      c(
+        paste0("*", center_text(" DATE AND TIME FIELDS ", "-"), "*"),
+        "",
+        datetime_block,
+        ""
+      )
+    },
     paste0("*", center_text(" VALUE LABELS ", "-"), "*"),
     "",
     "label define slt_multi_binary 1 \"Yes\" 0 \"No\", modify",
@@ -420,7 +462,11 @@ cto_form_dofile <- function(form_id, path = NULL) {
   #do_file_content <- sub('(") - ', '\\1', do_file_content)
 
   if (!is.null(path)) {
-    writeLines(do_file_content, path)
+    # readxl returns UTF-8, but writeLines() would otherwise re-encode to the
+    # session's native encoding and mangle non-ASCII labels on Windows.
+    con <- file(path, open = "wb")
+    on.exit(close(con), add = TRUE)
+    writeLines(enc2utf8(do_file_content), con, useBytes = TRUE)
   }
   return(invisible(do_file_content))
 }
