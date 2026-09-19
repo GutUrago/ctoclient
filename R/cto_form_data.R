@@ -227,7 +227,9 @@ cto_form_data <- function(
     {
       readxl::read_excel(fp, sheet = "choices") |>
         mutate(value = suppressWarnings(as.numeric(.data$value))) |>
-        dplyr::filter(!is.na(.data$value)) |>
+        # A binary column only ever exists for an integer choice value, so a
+        # decimal one would name a column the export cannot contain.
+        dplyr::filter(!is.na(.data$value), .data$value == round(.data$value)) |>
         mutate(value = str_replace_all(.data$value, "-", "_")) |>
         select("list_name", "value") |>
         dplyr::right_join(
