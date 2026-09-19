@@ -194,6 +194,8 @@ cto_form_dofile <- function(form_id, path = NULL) {
   names(multi_lookup) <- purrr::map_chr(multi_lookup, ~ .x$list_name[1])
 
   # --- 4b. Date and Time Fields ---
+  null_block <- build_null_block(form_null_vars(survey$name, survey$type))
+
   dt_vars <- form_datetime_vars(survey$name, survey$type)
 
   datetime_block <- build_datetime_block(
@@ -241,7 +243,7 @@ cto_form_dofile <- function(form_id, path = NULL) {
         NA_character_
       ),
       is_null_fields = grepl(
-        "^note|^begin group|^end group|^begin repeat|^end repeat",
+        "^note|^begin[ _]group|^end[ _]group|^begin[ _]repeat|^end[ _]repeat",
         .data$type,
         TRUE
       )
@@ -425,6 +427,14 @@ cto_form_dofile <- function(form_id, path = NULL) {
 
   do_file_content <- c(
     header_content,
+    if (length(null_block) > 0) {
+      c(
+        paste0("*", center_text(" EMPTY FIELDS ", "-"), "*"),
+        "",
+        null_block,
+        ""
+      )
+    },
     if (length(datetime_block) > 0) {
       c(
         paste0("*", center_text(" DATE AND TIME FIELDS ", "-"), "*"),

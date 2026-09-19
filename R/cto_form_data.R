@@ -163,7 +163,7 @@ cto_form_data <- function(
           is_date = grepl("^date$|^today$", .data$type, TRUE),
           is_datetime = grepl("^datetime$|^start$|^end$", .data$type, TRUE),
           is_null_fields = grepl(
-            "^note|^begin group|^end group|^end repeat",
+            "^note|^begin[ _]group|^end[ _]group|^end[ _]repeat",
             .data$type,
             TRUE
           ),

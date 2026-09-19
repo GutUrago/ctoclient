@@ -212,6 +212,110 @@ form_datetime_vars <- function(name, type) {
   )
 }
 
+# Structural fields of a form definition ----
+# Rows that carry no data of their own. `begin repeat` is included because the
+# export names its counter "<name>_count", which sits one repeat level out.
+form_null_vars <- function(name, type) {
+  name <- str_squish(name)
+  type <- str_squish(type)
+
+  is_null <- grepl(
+    "^note|^begin[ _]group|^end[ _]group|^begin[ _]repeat|^end[ _]repeat",
+    type,
+    TRUE
+  )
+  is_begin_repeat <- grepl("^begin[ _]repeat", type, TRUE)
+
+  repeat_level <- purrr::accumulate(
+    type,
+    .init = 0,
+    .f = function(i, x) {
+      if (grepl("^begin[ _]repeat", x, TRUE)) {
+        i + 1
+      } else if (grepl("^end[ _]repeat", x, TRUE)) {
+        i - 1
+      } else {
+        i
+      }
+    }
+  )[-1]
+
+  stub <- ifelse(is_begin_repeat, paste0(name, "_count"), name)
+  level <- ifelse(is_begin_repeat, repeat_level - 1L, repeat_level)
+
+  keep <- is_null & !is.na(name) & nzchar(name) & level >= 0
+  out <- data.frame(
+    stub = stub[keep],
+    level = level[keep],
+    stringsAsFactors = FALSE
+  )
+  out <- out[!duplicated(out$stub), , drop = FALSE]
+  out[order(out$level, out$stub), , drop = FALSE]
+}
+
+# Stata block dropping structural fields that hold no data ----
+# Candidates are grouped by repeat level so one loop per level can rebuild the
+# exported name pattern from the stub, the same way the label sections do.
+# Nothing is dropped until Stata has confirmed the variable exists and that
+# every value is missing.
+build_null_block <- function(nulls, per_line = 6) {
+  if (nrow(nulls) == 0) {
+    return(character(0))
+  }
+
+  declarations <- character(0)
+  loops <- character(0)
+
+  for (lv in sort(unique(nulls$level))) {
+    stubs <- nulls$stub[nulls$level == lv]
+    macro <- paste0("nullvars", lv)
+    chunks <- split(stubs, ceiling(seq_along(stubs) / per_line))
+
+    declarations <- c(
+      declarations,
+      str_glue("\tlocal {macro} {paste(chunks[[1]], collapse = ' ')}")
+    )
+    for (k in seq_along(chunks)[-1]) {
+      declarations <- c(
+        declarations,
+        str_glue(
+          "\tlocal {macro} `{macro}' {paste(chunks[[k]], collapse = ' ')}"
+        )
+      )
+    }
+
+    pattern <- paste0("^`stub'", strrep("_[0-9]+", lv), "$")
+    loops <- c(
+      loops,
+      str_glue("\tforeach stub of local {macro} {{"),
+      "\t\tcap unab matched : `stub'*",
+      "\t\tif !_rc {",
+      "\t\t\tforeach var of local matched {",
+      str_glue("\t\t\t\tif regexm(\"`var\'\", \"{pattern}\") {{"),
+      "\t\t\t\t\tqui count if !missing(`var')",
+      "\t\t\t\t\tif r(N) == 0 {",
+      "\t\t\t\t\t\tlocal null_confirmed `null_confirmed' `var'",
+      "\t\t\t\t\t}",
+      "\t\t\t\t}",
+      "\t\t\t}",
+      "\t\t}",
+      "\t}",
+      ""
+    )
+  }
+
+  c(
+    declarations,
+    "",
+    "\tlocal null_confirmed",
+    loops,
+    "\tif \"`null_confirmed\'\" != \"\" {",
+    "\t\tdrop `null_confirmed'",
+    "\t}",
+    ""
+  )
+}
+
 # Stata block converting exported string dates to numeric ----
 build_datetime_block <- function(datetime_vars, date_vars, topyear) {
   loop <- function(vars, fn, mask, fmt) {
@@ -221,7 +325,9 @@ build_datetime_block <- function(datetime_vars, date_vars, topyear) {
     c(
       str_glue("\tlocal dtvarlist {paste(vars, collapse = ' ')}"),
       "\tforeach dtvar in `dtvarlist' {",
-      "\t\tcap confirm variable `dtvar'",
+      # Only a string can be parsed. Without this, a second run would
+      # replace an already converted variable with missing values.
+      "\t\tcap confirm string variable `dtvar'",
       "\t\tif !_rc {",
       "\t\t\ttempvar tempdtvar",
       "\t\t\trename `dtvar' `tempdtvar'",

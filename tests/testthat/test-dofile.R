@@ -41,7 +41,7 @@ test_that(
     expect_match(out, "format %tc `dtvar'", fixed = TRUE)
     expect_match(out, "date(`tempdtvar',\"MDY\",", fixed = TRUE)
     expect_match(out, "format %td `dtvar'", fixed = TRUE)
-    expect_match(out, "cap confirm variable `dtvar'", fixed = TRUE)
+    expect_match(out, "cap confirm string variable `dtvar'", fixed = TRUE)
   }
 )
 
@@ -149,5 +149,48 @@ test_that(
     txt <- readLines(p, encoding = "UTF-8", warn = FALSE)
     expect_true(any(grepl("Land area in ha", txt, fixed = TRUE)))
     expect_true(all(validUTF8(txt)))
+  }
+)
+
+test_that(
+  "structural fields are confirmed empty before being dropped",
+  {
+    out <- paste(dofile(), collapse = "\n")
+
+    # note_intro and the underscore-spelled group, plus the repeat counter
+    expect_match(out, "local nullvars0 grp_demog note_intro plot_rpt_count", fixed = TRUE)
+    # a note inside the repeat is exported once per instance
+    expect_match(out, "local nullvars1 note_plot", fixed = TRUE)
+
+    expect_match(out, "cap unab matched : `stub'*", fixed = TRUE)
+    expect_match(out, "qui count if !missing(`var')", fixed = TRUE)
+    expect_match(out, "drop `null_confirmed'", fixed = TRUE)
+
+    # a real question must never become a drop candidate
+    expect_false(any(grepl("^\tlocal nullvars[0-9].*\\b(hh_size|resp_name|plot_size)\\b",
+                           dofile())))
+  }
+)
+
+test_that(
+  "the empty field section runs before anything else",
+  {
+    out <- paste(dofile(), collapse = "\n")
+    expect_lt(
+      regexpr("EMPTY FIELDS", out, fixed = TRUE),
+      regexpr("DATE AND TIME", out, fixed = TRUE)
+    )
+  }
+)
+
+test_that(
+  "a date field is only parsed while it is still a string",
+  {
+    out <- paste(dofile(), collapse = "\n")
+
+    expect_match(out, "cap confirm string variable `dtvar'", fixed = TRUE)
+    # the bare existence check would re-parse an already converted variable,
+    # replacing it with missing values
+    expect_no_match(out, "cap confirm variable `dtvar'", fixed = TRUE)
   }
 )

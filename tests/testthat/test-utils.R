@@ -310,7 +310,7 @@ test_that(
   {
     out <- build_datetime_block("SubmissionDate", character(0), "2026")
 
-    expect_true(any(grepl("cap confirm variable `dtvar'", out, fixed = TRUE)))
+    expect_true(any(grepl("cap confirm string variable `dtvar'", out, fixed = TRUE)))
     expect_true(any(grepl("if !_rc {", out, fixed = TRUE)))
   }
 )
@@ -329,5 +329,92 @@ test_that(
   {
     out <- build_datetime_block(c("SubmissionDate", "starttime", "endtime"), character(0), "2026")
     expect_true(any(grepl("local dtvarlist SubmissionDate starttime endtime", out, fixed = TRUE)))
+  }
+)
+
+
+# ---- form_null_vars() ----
+
+test_that(
+  "form_null_vars() finds structural fields at the level they are exported",
+  {
+    type <- c(
+      "note", "begin_group", "integer", "end_group",
+      "begin repeat", "note", "integer", "end repeat", "text"
+    )
+    name <- c("n1", "g1", "q1", "", "rpt", "n2", "q2", "", "q3")
+    out <- form_null_vars(name, type)
+
+    expect_setequal(out$stub, c("n1", "g1", "rpt_count", "n2"))
+    expect_equal(out$level[out$stub == "n1"], 0)
+    expect_equal(out$level[out$stub == "g1"], 0)
+    # the repeat counter sits one level outside the repeat it counts
+    expect_equal(out$level[out$stub == "rpt_count"], 0)
+    # a note inside the repeat is exported once per instance
+    expect_equal(out$level[out$stub == "n2"], 1)
+  }
+)
+
+test_that(
+  "form_null_vars() matches both the spaced and underscored spellings",
+  {
+    spaced <- form_null_vars(c("g", "r"), c("begin group", "begin repeat"))
+    under <- form_null_vars(c("g", "r"), c("begin_group", "begin_repeat"))
+    expect_setequal(spaced$stub, under$stub)
+    expect_setequal(under$stub, c("g", "r_count"))
+  }
+)
+
+test_that(
+  "form_null_vars() ignores unnamed rows and real questions",
+  {
+    type <- c("end_group", "end repeat", "integer", "select_one yn", "geopoint")
+    name <- c("", NA, "q1", "q2", "q3")
+    expect_equal(nrow(form_null_vars(name, type)), 0)
+  }
+)
+
+
+# ---- build_null_block() ----
+
+test_that(
+  "build_null_block() chunks long lists and loops once per level",
+  {
+    nulls <- data.frame(
+      stub = c(paste0("n", 1:8), "deep"),
+      level = c(rep(0, 8), 1),
+      stringsAsFactors = FALSE
+    )
+    txt <- paste(build_null_block(nulls, per_line = 6), collapse = "\n")
+
+    expect_match(txt, "local nullvars0 n1 n2 n3 n4 n5 n6", fixed = TRUE)
+    expect_match(txt, "local nullvars0 `nullvars0' n7 n8", fixed = TRUE)
+    expect_match(txt, "local nullvars1 deep", fixed = TRUE)
+
+    # the pattern is rebuilt from the stub, one loop per level
+    expect_match(txt, "if regexm(\"`var'\", \"^`stub'$\")", fixed = TRUE)
+    expect_match(txt, "if regexm(\"`var'\", \"^`stub'_[0-9]+$\")", fixed = TRUE)
+  }
+)
+
+test_that(
+  "build_null_block() confirms a variable is empty before dropping it",
+  {
+    nulls <- data.frame(stub = "n1", level = 0, stringsAsFactors = FALSE)
+    txt <- paste(build_null_block(nulls), collapse = "\n")
+
+    expect_match(txt, "cap unab matched : `stub'*", fixed = TRUE)
+    expect_match(txt, "qui count if !missing(`var')", fixed = TRUE)
+    expect_match(txt, "if r(N) == 0 {", fixed = TRUE)
+    expect_match(txt, "local null_confirmed `null_confirmed' `var'", fixed = TRUE)
+    expect_match(txt, "drop `null_confirmed'", fixed = TRUE)
+  }
+)
+
+test_that(
+  "build_null_block() emits nothing when there is nothing to drop",
+  {
+    empty <- data.frame(stub = character(0), level = numeric(0))
+    expect_length(build_null_block(empty), 0)
   }
 )
