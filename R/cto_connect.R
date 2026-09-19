@@ -141,6 +141,7 @@ cto_connect <- function(
   req$server <- server
   class(req) <- c(class(req), "cto_session")
   assign(".session", req, envir = .ctoclient_env)
+  assign(".form_ids", NULL, envir = .ctoclient_env)
   invisible(req)
 }
 

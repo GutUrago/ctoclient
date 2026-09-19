@@ -77,11 +77,53 @@ assert_url_safe <- function(x, arg = "id") {
   invisible(TRUE)
 }
 
+# Form IDs, cached per server ----
+# Returns `ids` together with whether they came from the cache, so the caller
+# can tell a stale miss from a real one. The cache is keyed on the server
+# name: switching connection with cto_set_connection() therefore cannot reuse
+# another server's list. A session with no usable server name is never
+# cached, so behaviour falls back to a plain request.
+get_form_ids <- function(session, refresh = FALSE) {
+  key <- session$server
+  usable_key <- is.character(key) &&
+    length(key) == 1L &&
+    !is.na(key) &&
+    nzchar(key)
+
+  if (!usable_key) {
+    return(list(
+      ids = fetch_api_response(session, "api/v2/forms/ids"),
+      cached = FALSE
+    ))
+  }
+
+  cache <- .ctoclient_env$.form_ids
+  if (!refresh && identical(cache$server, key) && length(cache$ids) > 0) {
+    return(list(ids = cache$ids, cached = TRUE))
+  }
+
+  ids <- fetch_api_response(session, "api/v2/forms/ids")
+  # Only a non-empty character vector is worth keeping.
+  if (is.character(ids) && length(ids) > 0) {
+    assign(".form_ids", list(server = key, ids = ids), envir = .ctoclient_env)
+  }
+
+  list(ids = ids, cached = FALSE)
+}
+
 # Assert form IDs ----
-assert_form_id <- function(form_id) {
+assert_form_id <- function(form_id, session = get_session()) {
   checkmate::assert_string(form_id)
-  form_ids <- fetch_api_response(get_session(), "api/v2/forms/ids")
-  if (!(form_id %in% form_ids)) {
+
+  found <- get_form_ids(session)
+  if (!(form_id %in% found$ids) && found$cached) {
+    # The form may have been deployed since the list was cached. Refreshing
+    # only after a cached miss keeps the number of requests at or below what
+    # an uncached lookup would have made.
+    found <- get_form_ids(session, refresh = TRUE)
+  }
+
+  if (!(form_id %in% found$ids)) {
     cli_abort(c(
       x = "There is no form with {.val {form_id}} ID",
       i = "Use {.run ctoclient::cto_form_ids()} to see available form IDs"
