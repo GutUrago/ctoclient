@@ -26,8 +26,10 @@ Roxygen: list(markdown = TRUE)
 Imports: 
     checkmate,
     cli,
+    curl,
     dplyr,
     httr2 (>= 1.2.0),
+    jsonlite,
     purrr,
     readr,
     readxl,
@@ -35,9 +37,7 @@ Imports:
     stringr,
     tidyr
 Suggests: 
-    curl,
     httptest2,
-    jsonlite,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)
