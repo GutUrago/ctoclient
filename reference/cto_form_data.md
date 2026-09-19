@@ -73,14 +73,26 @@ steps:
   leaving only the filename.
 
 - **Geopoints:** Splits geopoint variables into four columns with
-  `_latitude`, `_longitude`, `_altitude`, and `_accuracy` suffixes when
-  not already present.
+  `_lat`, `_long`, `_alt`, and `_acc` suffixes. The original column is
+  kept under its own name.
+
+- **Select multiple:** Adds the binary columns that the export omits
+  when no respondent picked an option, and fills unselected options with
+  `0` for rows that selected at least one. A row that selected nothing
+  keeps `NA`, so "asked and answered none" stays distinct from "never
+  asked".
+
+Each step is applied independently: if one fails, a message naming the
+step is printed and the remaining steps still run, so a partial failure
+returns data rather than an error.
 
 ## See also
 
 Other Form Management Functions:
+[`cto_docx_palette()`](https://guturago.github.io/ctoclient/reference/cto_docx_palette.md),
 [`cto_form_attachment()`](https://guturago.github.io/ctoclient/reference/cto_form_attachment.md),
 [`cto_form_data_attachment()`](https://guturago.github.io/ctoclient/reference/cto_form_data_attachment.md),
+[`cto_form_docx()`](https://guturago.github.io/ctoclient/reference/cto_form_docx.md),
 [`cto_form_dofile()`](https://guturago.github.io/ctoclient/reference/cto_form_dofile.md),
 [`cto_form_languages()`](https://guturago.github.io/ctoclient/reference/cto_form_languages.md),
 [`cto_form_metadata()`](https://guturago.github.io/ctoclient/reference/cto_form_metadata.md)

@@ -6,27 +6,18 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Managing Connections • ctoclient</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
 <script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Managing Connections">
 </head>
 <body>
-<p>
-
-
-
-
-
-
-
-
-  pkgdown/extra-header.html
-
-  
-
-  </p>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -34,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ctoclient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,13 +34,21 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/managing-connections.html">Managing Connections</a></li>
+<li><h6 class="dropdown-header" data-toc-skip>Getting started</h6></li>
+    <li><a class="dropdown-item" href="../articles/managing-connections.html">Managing connections</a></li>
+    <li><a class="dropdown-item" href="../articles/form-data.html">Working with form data</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Going further</h6></li>
+    <li><a class="dropdown-item" href="../articles/form-documentation.html">Documenting and reviewing a form</a></li>
+    <li><a class="dropdown-item" href="../articles/attachments.html">Attachments and media</a></li>
+    <li><a class="dropdown-item" href="../articles/server-datasets.html">Managing server datasets</a></li>
+    <li><a class="dropdown-item" href="../articles/automation.html">Automating a pipeline</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -77,8 +76,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Managing Connections</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Managing Connections</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/guturago/ctoclient/blob/main/vignettes/managing-connections.Rmd" class="external-link"><code>vignettes/managing-connections.Rmd</code></a></small>
@@ -89,93 +87,190 @@
     
 <p>Efficiently managing connections is the foundation of a robust data
 pipeline. <code>ctoclient</code> is designed to handle both simple
-single-server scripts and complex multi-server environments common in
-large-scale research projects.</p>
+single-server scripts and the multi-server setups common in large-scale
+research projects.</p>
 <div class="section level2">
-<h2 id="authentication-strategies">1. Authentication Strategies<a class="anchor" aria-label="anchor" href="#authentication-strategies"></a>
+<h2 id="authentication-strategies">1. Authentication strategies<a class="anchor" aria-label="anchor" href="#authentication-strategies"></a>
 </h2>
-<p><strong>Security First</strong></p>
-<p>Never store passwords directly in your R scripts. If you share your
-code or push it to GitHub, your credentials will be exposed.</p>
-<p><strong>The .Renviron Approach</strong></p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://guturago.github.io/ctoclient/">ctoclient</a></span><span class="op">)</span></span></code></pre></div>
-<p>The most common way to manage credentials is via the .Renviron
-file.</p>
-<ul>
-<li>Call usethis::edit_r_environ().</li>
+<p><strong>Security first.</strong> Never store passwords directly in
+your R scripts. If you share your code or push it to GitHub, your
+credentials go with it.</p>
+<div class="section level3">
+<h3 id="the--renviron-approach">The .Renviron approach<a class="anchor" aria-label="anchor" href="#the--renviron-approach"></a>
+</h3>
+<p>The most common way to manage credentials is the
+<code>.Renviron</code> file.</p>
+<ol style="list-style-type: decimal">
+<li>Call <code>usethis::edit_r_environ()</code>.</li>
 <li>Add your credentials:</li>
-</ul>
+</ol>
+<pre><code><span><span class="va">CTO_SERVER</span><span class="op">=</span><span class="va">myorg</span></span>
+<span><span class="va">CTO_USER</span><span class="op">=</span><span class="va">admin</span><span class="op">@</span><span class="va">example.com</span></span>
+<span><span class="va">CTO_PASS</span><span class="op">=</span><span class="va">mypassword123</span></span></code></pre>
+<ol start="3" style="list-style-type: decimal">
+<li>Restart R for the change to take effect.</li>
+<li>Connect:</li>
+</ol>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">CTO_SERVER</span><span class="op">=</span><span class="st">"myorg"</span></span>
-<span><span class="va">CTO_USER</span><span class="op">=</span><span class="st">"admin@example.com"</span></span>
-<span><span class="va">CTO_PASS</span><span class="op">=</span><span class="st">"mypassword123"</span></span></code></pre></div>
-<ul>
-<li><p>Restart R for changes to take effect.</p></li>
-<li><p>Connect using:</p></li>
-</ul>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/cto_connect.html">cto_connect</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://guturago.github.io/ctoclient/">ctoclient</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/cto_connect.html">cto_connect</a></span><span class="op">(</span></span>
 <span>  server   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"CTO_SERVER"</span><span class="op">)</span>,</span>
-<span>  user     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"CTO_USER"</span><span class="op">)</span>,</span>
+<span>  username <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"CTO_USER"</span><span class="op">)</span>,</span>
 <span>  password <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"CTO_PASS"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><strong>Interactive Mode</strong></p>
-<p>If you are working locally and haven’t set up environment variables,
-omit the password:</p>
+<p>Note that <code>.Renviron</code> entries are plain
+<code>NAME=value</code> lines, not R code, and that values containing
+spaces or <code>#</code> should be quoted.</p>
+</div>
+<div class="section level3">
+<h3 id="interactive-mode">Interactive mode<a class="anchor" aria-label="anchor" href="#interactive-mode"></a>
+</h3>
+<p>If you are working locally and have not set up environment variables,
+omit the password and you will be prompted for it securely:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/cto_connect.html">cto_connect</a></span><span class="op">(</span>server <span class="op">=</span> <span class="st">"myorg"</span>, username <span class="op">=</span> <span class="st">"admin@example.com"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="the-system-keyring">The system keyring<a class="anchor" aria-label="anchor" href="#the-system-keyring"></a>
+</h3>
+<p>For the strongest option on a personal machine, keep the password in
+your operating system’s credential store with the <a href="https://keyring.r-lib.org/" class="external-link">keyring</a> package. The secret never
+touches a file in your project:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/cto_connect.html">cto_connect</a></span><span class="op">(</span>server <span class="op">=</span> <span class="st">"myorg"</span>, user <span class="op">=</span> <span class="st">"admin@example.com"</span><span class="op">)</span></span>
-<span><span class="co"># R will prompt you for the password securely.</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Once, interactively:</span></span>
+<span><span class="fu">keyring</span><span class="fu">::</span><span class="fu">key_set</span><span class="op">(</span><span class="st">"ctoclient"</span>, username <span class="op">=</span> <span class="st">"admin@example.com"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># In every script from then on:</span></span>
+<span><span class="fu"><a href="../reference/cto_connect.html">cto_connect</a></span><span class="op">(</span></span>
+<span>  server   <span class="op">=</span> <span class="st">"myorg"</span>,</span>
+<span>  username <span class="op">=</span> <span class="st">"admin@example.com"</span>,</span>
+<span>  password <span class="op">=</span> <span class="fu">keyring</span><span class="fu">::</span><span class="fu">key_get</span><span class="op">(</span><span class="st">"ctoclient"</span>, username <span class="op">=</span> <span class="st">"admin@example.com"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
-<h2 id="working-with-multiple-servers">2. Working with Multiple Servers<a class="anchor" aria-label="anchor" href="#working-with-multiple-servers"></a>
+<h2 id="what-a-session-is">2. What a session is<a class="anchor" aria-label="anchor" href="#what-a-session-is"></a>
 </h2>
-<p>In some projects, you may need to move data between different
-servers, or aggregate data from multiple organizations.</p>
-<p><strong>The Session System</strong></p>
-<p><code><a href="../reference/cto_connect.html">cto_connect()</a></code> creates a global session by default. To
-work with multiple servers, you can capture the connection objects and
-set them explicitly as connections.</p>
+<p><code><a href="../reference/cto_connect.html">cto_connect()</a></code> authenticates, verifies the credentials,
+and stores the resulting request object inside the package. Every other
+function picks it up on its own, which is why you never pass a
+connection around:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Connect to Server A </span></span>
-<span><span class="va">conn_a</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cto_connect.html">cto_connect</a></span><span class="op">(</span></span>
-<span>  server <span class="op">=</span> <span class="st">"org-staging"</span>, </span>
-<span>  user <span class="op">=</span> <span class="st">"admin@email.com"</span>, </span>
-<span>  password <span class="op">=</span> <span class="st">"password1"</span></span>
-<span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/cto_connect.html">cto_connect</a></span><span class="op">(</span><span class="st">"myorg"</span>, <span class="st">"admin@example.com"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Connect to Server B</span></span>
-<span><span class="va">conn_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cto_connect.html">cto_connect</a></span><span class="op">(</span></span>
-<span>  server <span class="op">=</span> <span class="st">"org-prod"</span>, </span>
-<span>  user <span class="op">=</span> <span class="st">"admin@email.com"</span>, </span>
-<span>  password <span class="op">=</span> <span class="st">"password2"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Fetch data from server B</span></span>
-<span><span class="va">data_staging</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"baseline_survey"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Switch the connection to A </span></span>
-<span><span class="fu"><a href="../reference/cto_connect.html">cto_set_connection</a></span><span class="op">(</span><span class="va">conn_a</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Upload that same data to a dataset on Server A</span></span>
-<span><span class="fu"><a href="../reference/cto_dataset_create.html">cto_dataset_upload</a></span><span class="op">(</span><span class="st">"aggregated_data"</span>, data <span class="op">=</span> <span class="va">data_staging</span>,<span class="op">)</span></span></code></pre></div>
+<span><span class="co"># No connection argument anywhere</span></span>
+<span><span class="fu"><a href="../reference/cto_metadata.html">cto_form_ids</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"baseline_survey"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/cto_dataset_list.html">cto_dataset_list</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/cto_connect.html">cto_is_connected()</a></code> reports whether a session currently
+exists. It tells you that <code><a href="../reference/cto_connect.html">cto_connect()</a></code> has been called,
+not that the server is reachable right now:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/cto_connect.html">cto_is_connected</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="cookies">Cookies<a class="anchor" aria-label="anchor" href="#cookies"></a>
+</h3>
+<p>By default <code><a href="../reference/cto_connect.html">cto_connect()</a></code> preserves cookies and handles
+the CSRF token for you. Keep it that way. A number of functions reach
+console endpoints rather than REST endpoints, and they abort on a
+session that carries no cookies:</p>
+<ul>
+<li><code><a href="../reference/cto_form_data.html">cto_form_data()</a></code></li>
+<li>
+<code><a href="../reference/cto_form_metadata.html">cto_form_metadata()</a></code> and
+<code><a href="../reference/cto_form_metadata.html">cto_form_definition()</a></code>
+</li>
+<li>
+<code><a href="../reference/cto_form_languages.html">cto_form_languages()</a></code>,
+<code><a href="../reference/cto_form_languages.html">cto_form_printable()</a></code>,
+<code><a href="../reference/cto_form_languages.html">cto_form_stata_template()</a></code> and
+<code><a href="../reference/cto_form_languages.html">cto_form_mail_template()</a></code>
+</li>
+<li><code><a href="../reference/cto_metadata.html">cto_metadata()</a></code></li>
+</ul>
+<p><code><a href="../reference/cto_form_dofile.html">cto_form_dofile()</a></code> and <code><a href="../reference/cto_form_docx.html">cto_form_docx()</a></code> are
+in the same position indirectly, since both download the form definition
+first. In other words, <code>cookies = FALSE</code> leaves you with the
+dataset functions, the attachment downloads and the listing functions,
+and little else.</p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="advanced-customization-httr2">3. Advanced Customization (httr2)<a class="anchor" aria-label="anchor" href="#advanced-customization-httr2"></a>
+<h2 id="working-with-more-than-one-server">3. Working with more than one server<a class="anchor" aria-label="anchor" href="#working-with-more-than-one-server"></a>
 </h2>
-<p>Because ctoclient is built on <code>httr2</code>, every connection
-object contains an <code>httr2_request</code>. If you need to add custom
-headers or change the timeout for a specific high-latency request, you
-can modify the connection object before passing it to a function.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Example: Adding a custom user-agent or changing retry logic</span></span>
-<span><span class="va">custom_conn</span> <span class="op">&lt;-</span> <span class="va">conn_a</span> <span class="op">|&gt;</span> </span>
-<span>  <span class="fu">httr2</span><span class="fu">::</span><span class="fu"><a href="https://httr2.r-lib.org/reference/req_user_agent.html" class="external-link">req_user_agent</a></span><span class="op">(</span><span class="st">"MyCustomResearchBot/1.0"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">httr2</span><span class="fu">::</span><span class="fu"><a href="https://httr2.r-lib.org/reference/req_retry.html" class="external-link">req_retry</a></span><span class="op">(</span>max_tries <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
-<span>  </span>
-<span><span class="co"># Use the customized connection</span></span>
-<span><span class="fu"><a href="../reference/cto_connect.html">cto_set_connection</a></span><span class="op">(</span><span class="va">custom_conn</span><span class="op">)</span></span>
+<p>Some projects move data between servers, or aggregate across
+organizations. <code><a href="../reference/cto_connect.html">cto_connect()</a></code> returns the session invisibly,
+so you can capture each one and switch between them with
+<code><a href="../reference/cto_connect.html">cto_set_connection()</a></code>.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">conn_staging</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cto_connect.html">cto_connect</a></span><span class="op">(</span><span class="st">"org-staging"</span>, <span class="st">"admin@example.com"</span><span class="op">)</span></span>
+<span><span class="va">conn_prod</span>    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cto_connect.html">cto_connect</a></span><span class="op">(</span><span class="st">"org-prod"</span>, <span class="st">"admin@example.com"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># The most recent connect() is the active one, so this reads from prod</span></span>
+<span><span class="va">data_prod</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"baseline_survey"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Switch to staging and write the same data to a dataset there</span></span>
+<span><span class="fu"><a href="../reference/cto_connect.html">cto_set_connection</a></span><span class="op">(</span><span class="va">conn_staging</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/cto_dataset_create.html">cto_dataset_upload</a></span><span class="op">(</span><span class="st">"aggregated_data"</span>, file <span class="op">=</span> <span class="st">"data/baseline.csv"</span><span class="op">)</span></span></code></pre></div>
+<p>Because the active session is global, a script that switches servers
+should switch deliberately and close to the call that depends on it.
+Interleaving reads from two servers without an intervening
+<code><a href="../reference/cto_connect.html">cto_set_connection()</a></code> is the easiest way to fetch from the
+wrong one.</p>
+<p><code><a href="../reference/cto_dataset_create.html">cto_dataset_upload()</a></code> takes a path to a CSV in its
+<code>file</code> argument. To upload a data frame you have in memory,
+write it out first:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">tmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".csv"</span><span class="op">)</span></span>
+<span><span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/write_delim.html" class="external-link">write_csv</a></span><span class="op">(</span><span class="va">data_prod</span>, <span class="va">tmp</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/cto_dataset_create.html">cto_dataset_upload</a></span><span class="op">(</span><span class="st">"aggregated_data"</span>, file <span class="op">=</span> <span class="va">tmp</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="customizing-the-underlying-request">4. Customizing the underlying request<a class="anchor" aria-label="anchor" href="#customizing-the-underlying-request"></a>
+</h2>
+<p>Every session is an <code>httr2</code> request object, so anything
+<code>httr2</code> can do to a request you can do to a connection before
+handing it back to the package.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://httr2.r-lib.org" class="external-link">httr2</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">custom</span> <span class="op">&lt;-</span> <span class="va">conn_prod</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://httr2.r-lib.org/reference/req_user_agent.html" class="external-link">req_user_agent</a></span><span class="op">(</span><span class="st">"MyResearchBot/1.0"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://httr2.r-lib.org/reference/req_retry.html" class="external-link">req_retry</a></span><span class="op">(</span>max_tries <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://httr2.r-lib.org/reference/req_timeout.html" class="external-link">req_timeout</a></span><span class="op">(</span><span class="fl">120</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/cto_connect.html">cto_set_connection</a></span><span class="op">(</span><span class="va">custom</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"my_form"</span><span class="op">)</span></span></code></pre></div>
+<p>This is the supported way to change retry behaviour, timeouts,
+proxies or headers. Two things to keep in mind: the package sets its own
+throttle (30 requests per minute) which you should only raise if you
+know your server tolerates it, and SurveyCTO rejects parallel requests
+from the same account with a 409, so a retry policy is more useful to
+you than concurrency.</p>
+</div>
+<div class="section level2">
+<h2 id="verbosity">5. Verbosity<a class="anchor" aria-label="anchor" href="#verbosity"></a>
+</h2>
+<p>Most functions report progress through the console. To silence them —
+in a scheduled job, say — set the option:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>ctoclient.verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p>Set it back to <code>TRUE</code>, or unset it, to get the messages
+again.</p>
+</div>
+<div class="section level2">
+<h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
+</h2>
+<ul>
+<li>
+<a href="form-data.html">Working with form data</a> for what happens
+to submissions after they are downloaded.</li>
+<li>
+<a href="automation.html">Automating a pipeline</a> for credentials
+in CI and scheduled jobs.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -188,7 +283,7 @@ can modify the connection object before passing it to a function.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>
@@ -198,6 +293,5 @@ can modify the connection object before passing it to a function.</p>
 
 
 
-  
-</body>
+  </body>
 </html>

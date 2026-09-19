@@ -1,0 +1,225 @@
+# Managing Server Datasets
+
+Server datasets are the tables a SurveyCTO server holds alongside your
+forms: sampling frames, household rosters, case management lists,
+pre-loaded choice lists. `ctoclient` covers the whole lifecycle, and
+this article walks through it in the order you would actually meet it.
+
+``` r
+
+library(ctoclient)
+cto_connect("myorg", "admin@example.com")
+```
+
+## 1. Seeing what is there
+
+``` r
+
+datasets <- cto_dataset_list()
+
+info <- cto_dataset_info("sampling_frame")
+```
+
+[`cto_dataset_list()`](https://guturago.github.io/ctoclient/reference/cto_dataset_list.md)
+returns one row per dataset.
+[`cto_dataset_info()`](https://guturago.github.io/ctoclient/reference/cto_dataset_info.md)
+returns the configuration of a single one — its title, its unique record
+field, whether offline updates are allowed, and so on. Read the second
+before you upload to a dataset somebody else set up; the upload modes
+below behave very differently depending on how the dataset was
+configured.
+
+## 2. Creating one
+
+``` r
+
+cto_dataset_create("sampling_frame")
+```
+
+That is the minimum. `title` defaults to the ID, and everything else is
+optional — but three arguments are worth knowing about, because they are
+awkward to change later:
+
+``` r
+
+cto_dataset_create(
+  "household_cases",
+  title               = "Household case management",
+  unique_record_field = "hh_id",
+  allow_offline_updates = TRUE
+)
+```
+
+`unique_record_field` names the column that identifies a row. It is what
+`MERGE` uploads match on, and what case management uses to find a case.
+A dataset created without it can only ever be appended to or replaced
+wholesale.
+
+`allow_offline_updates` lets enumerators modify records while offline,
+which is what you want for case management and usually not what you want
+for a static sampling frame.
+
+`discriminator` and the `id_format_options`, `cases_management_options`
+and `location_context` lists cover the rest of the server’s dataset
+settings; see
+[`?cto_dataset_create`](https://guturago.github.io/ctoclient/reference/cto_dataset_create.md)
+for the full set.
+
+## 3. Uploading data
+
+[`cto_dataset_upload()`](https://guturago.github.io/ctoclient/reference/cto_dataset_create.md)
+takes a **path to a CSV file**, not a data frame:
+
+``` r
+
+cto_dataset_upload("sampling_frame", file = "data/frame.csv")
+```
+
+To upload something you have in memory, write it out first:
+
+``` r
+
+tmp <- tempfile(fileext = ".csv")
+readr::write_csv(frame, tmp)
+cto_dataset_upload("sampling_frame", file = tmp)
+```
+
+### The three upload modes
+
+`upload_mode` is the argument to get right, because two of the three can
+destroy data.
+
+**`"APPEND"`** (the default) adds the rows in your file to whatever is
+already there. It does not check for duplicates. Uploading the same file
+twice gives you every row twice.
+
+``` r
+
+cto_dataset_upload("sampling_frame", "data/new_villages.csv")
+```
+
+**`"MERGE"`** matches incoming rows against existing ones and updates
+them in place, adding any that do not match. It needs to know what to
+match on, which is what `joining_field` is for:
+
+``` r
+
+cto_dataset_upload(
+  "household_cases",
+  file          = "data/updated_status.csv",
+  upload_mode   = "MERGE",
+  joining_field = "hh_id"
+)
+```
+
+Get `joining_field` wrong and you will either update the wrong rows or
+append everything as new records. Check it against
+[`cto_dataset_info()`](https://guturago.github.io/ctoclient/reference/cto_dataset_info.md)
+first.
+
+**`"CLEAR"`** empties the dataset before uploading. Everything currently
+in it is gone, and there is no undo:
+
+``` r
+
+cto_dataset_upload(
+  "sampling_frame",
+  file        = "data/frame_v2.csv",
+  upload_mode = "CLEAR"
+)
+```
+
+Use it when the file you are uploading is the complete, authoritative
+contents. If enumerators have been updating records offline, `CLEAR`
+discards their work.
+
+## 4. Downloading
+
+``` r
+
+# One dataset
+cto_dataset_download("sampling_frame", dir = "data")
+
+# Every dataset on the server
+cto_dataset_download(dir = "data/backups")
+```
+
+Called with no `id`, it downloads all of them — which makes a one-line
+backup before a risky upload:
+
+``` r
+
+cto_dataset_download(dir = "backups/2026-09-19")
+cto_dataset_upload("sampling_frame", "data/frame_v2.csv", upload_mode = "CLEAR")
+```
+
+Files are written as `<id>.csv`. An existing file is left alone unless
+you pass `overwrite = TRUE`, so a scheduled backup will not silently
+replace yesterday’s copy — and equally, will not refresh it. Use a dated
+directory as above, or `overwrite = TRUE` deliberately.
+
+## 5. Emptying and removing
+
+``` r
+
+# Remove every row, keep the dataset and its configuration
+cto_dataset_purge("sampling_frame")
+
+# Remove the dataset itself
+cto_dataset_delete("sampling_frame")
+```
+
+Both are immediate and neither asks for confirmation.
+[`cto_dataset_purge()`](https://guturago.github.io/ctoclient/reference/cto_dataset_delete.md)
+is the one to reach for when you want to reload a frame but keep the
+configuration, the ID and anything referencing it.
+[`cto_dataset_delete()`](https://guturago.github.io/ctoclient/reference/cto_dataset_delete.md)
+breaks any form that pre-loads from that dataset, so check before
+running it:
+
+``` r
+
+# What still references this dataset?
+cto_metadata("forms")
+```
+
+In a script, a purge or a delete is worth guarding behind something
+explicit rather than leaving it on a line that can be re-run by
+accident.
+
+## 6. A worked refresh
+
+Putting it together — a weekly refresh that keeps a backup and replaces
+the frame atomically enough to be safe:
+
+``` r
+
+library(ctoclient)
+
+cto_connect(
+  server   = Sys.getenv("CTO_SERVER"),
+  username = Sys.getenv("CTO_USER"),
+  password = Sys.getenv("CTO_PASS")
+)
+
+backup_dir <- file.path("backups", Sys.Date())
+dir.create(backup_dir, recursive = TRUE, showWarnings = FALSE)
+cto_dataset_download("sampling_frame", dir = backup_dir)
+
+frame <- build_frame()          # your own code
+stopifnot(nrow(frame) > 0, !anyDuplicated(frame$hh_id))
+
+tmp <- tempfile(fileext = ".csv")
+readr::write_csv(frame, tmp)
+cto_dataset_upload("sampling_frame", tmp, upload_mode = "CLEAR")
+```
+
+The [`stopifnot()`](https://rdrr.io/r/base/stopifnot.html) matters more
+than it looks: `CLEAR` with an empty or malformed file empties the
+dataset and puts nothing back.
+
+## See also
+
+- [Automating a
+  pipeline](https://guturago.github.io/ctoclient/articles/automation.md)
+  for running this on a schedule.

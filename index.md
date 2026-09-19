@@ -21,12 +21,6 @@ resources.
 - **Stata Integration:** Built-in tools for generating `.do` files and
   templates for legacy pipelines.
 
-## Documentation (Upcoming)
-
-- Managing connections and sessions
-- Working with form data
-- Managing server data
-
 ## Installation
 
 Install the stable version from CRAN:
@@ -44,119 +38,74 @@ Or get the development version with the latest features:
 pak::pak("GutUrago/ctoclient")
 ```
 
-## 1. Setup & Authentication
+## Quick start
 
-To keep your credentials secure, **never hard-code passwords** in
-scripts. `ctoclient` supports two primary ways to authenticate:
-
-**1. Interactive Prompts (Recommended for Dev)**
-
-If you leave the password blank, `ctoclient` will securely prompt you
-for it in the console.
+Connect once, then work. Every function picks up the active session on
+its own, so there is no connection object to pass around.
 
 ``` r
 
 library(ctoclient)
+
+# Leave the password out and you are prompted for it securely
 cto_connect(server = "myorg", username = "admin@example.com")
+
+# What is on the server?
+cto_form_ids()
+
+# Download and tidy submissions
+data <- cto_form_data("baseline_survey")
+
+# Download the photos respondents submitted
+cto_form_data_attachment("baseline_survey", fields = ends_with("_img"))
+
+# Label a Stata export, and generate a Word copy of the form for review
+cto_form_dofile("baseline_survey", path = "baseline_labels.do")
+cto_form_docx("baseline_survey", path = "baseline_review.docx")
 ```
 
-**2. Environment Variables (Recommended for CI/CD)**
+[`cto_form_data()`](https://guturago.github.io/ctoclient/reference/cto_form_data.md)
+does real work on your behalf: it types numeric, date and datetime
+fields from the form definition, drops structural rows, splits geopoints
+into `_lat`/`_long`/`_alt`/`_acc`, strips URLs from media columns, and
+fills in the `select_multiple` binary columns that the export omits when
+nobody picked an option. Pass `tidy = FALSE` to get the server’s raw
+export instead.
 
-To use `.Renviron` file:
+## Documentation
 
-1.  Run `usethis::edit_r_environ()` to open your environment file.
-2.  Add your credentials:
+- [Managing
+  connections](https://guturago.github.io/ctoclient/articles/managing-connections.html)
+  — credentials, sessions, multiple servers
+- [Working with form
+  data](https://guturago.github.io/ctoclient/articles/form-data.html) —
+  what tidying does, field by field
+- [Documenting and reviewing a
+  form](https://guturago.github.io/ctoclient/articles/form-documentation.html)
+  — Stata do-files, Word review documents, printable versions
+- [Attachments and
+  media](https://guturago.github.io/ctoclient/articles/attachments.html)
+  — form media and submission files
+- [Managing server
+  datasets](https://guturago.github.io/ctoclient/articles/server-datasets.html)
+  — the upload modes, and how not to lose data
+- [Automating a
+  pipeline](https://guturago.github.io/ctoclient/articles/automation.html)
+  — CI, scheduling, incremental pulls
 
-``` r
+The [function
+reference](https://guturago.github.io/ctoclient/reference/index.html)
+lists everything the package exports, grouped by task.
 
-SERVER="myorg"
-USER="myemail@example.com"
-PASS="mypassword"
-```
+## Security
 
-3.  Restart R.
-
-\[!TIP\] For even higher security, consider using the
-[keyring](https://keyring.r-lib.org/) package to store passwords in your
-system’s secure credential store.
-
-### 2. Working with Forms and Data
-
-Download form definitions, data, and attachments.
-
-``` r
-
-# List all available forms
-forms <- cto_form_ids()
-
-# Get metadata form for specific form
-cto_form_metadata('myform')
-
-# Download data for a specific form
-data <- cto_form_data("myform")
-
-# Download encrypted data
-data <- cto_form_data("myform", "mykey")
-
-# Download encrypted data in a raw format
-data <- cto_form_data("myform", "mykey", tidy = FALSE)
-
-# Download form submission medias
-cto_form_data_attachment('myform', ends_with('_img'), "mykey")
-
-# Download the default form import do-file
-cto_form_stata_template('myform')
-
-# Build custom Stata import do-file
-cto_form_dofile('myform', "form.do")
-
-# Download attachments (e.g., photos, audio)
-cto_form_attachment("myform", dir = "data/attachments", overwrite = TRUE)
-```
-
-### 3. Server Datasets
-
-Manage server-side datasets.
-
-``` r
-
-# List existing datasets
-datasets <- cto_dataset_list()
-
-# Create server dataset
-cto_dataset_create("mydata")
-
-# Upload a local CSV to a server dataset
-cto_dataset_upload("mydata", "data/mydata.csv")
-
-# Download a server dataset to a local file
-cto_dataset_download(dir = "data/downloads", overwrite = TRUE)
-
-# Purge server dataset
-cto_dataset_purge("mydata")
-
-# Delete server dataset
-cto_dataset_delete("mydata")
-```
-
-### 4. Utilities and Metadata
-
-Retrieve server configuration and helper files.
-
-``` r
-
-# Get server metadata
-meta <- cto_metadata()
-
-# Generate a Stata template for a form
-cto_form_languages("myform")
-
-# Get a printable version of the form
-cto_form_printable("myform")
-
-# Get a mail-merge template of the form
-cto_form_mail_template("myform")
-```
+Never hard-code passwords in a script. Store them in `.Renviron`
+(`usethis::edit_r_environ()`) and read them with
+[`Sys.getenv()`](https://rdrr.io/r/base/Sys.getenv.html), or keep them
+in your system credential store with the
+[keyring](https://keyring.r-lib.org/) package. See [Managing
+connections](https://guturago.github.io/ctoclient/articles/managing-connections.html)
+for the details.
 
 ## Contributing
 

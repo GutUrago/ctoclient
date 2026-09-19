@@ -6,29 +6,21 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>A Modern and Flexible Data Pipeline for SurveyCTO • ctoclient</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" sizes="any" href="favicon.ico">
+<link rel="manifest" href="site.webmanifest">
 <script src="lightswitch.js"></script><script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="A Modern and Flexible Data Pipeline for SurveyCTO">
 <meta name="description" content="A modern and flexible R client for the SurveyCTO, a mobile and offline data collection platform, providing a modern and consistent interface for programmatic access to server resources. Built on top of the httr2 package, it enables secure and efficient data retrieval and returns analysis-ready data through optional tidying. It includes functions to create, upload, and download server datasets, in addition to fetching form data, files, and submission attachments. Robust authentication and request handling make the package suitable for automated survey monitoring and downstream analysis.">
 <meta property="og:description" content="A modern and flexible R client for the SurveyCTO, a mobile and offline data collection platform, providing a modern and consistent interface for programmatic access to server resources. Built on top of the httr2 package, it enables secure and efficient data retrieval and returns analysis-ready data through optional tidying. It includes functions to create, upload, and download server datasets, in addition to fetching form data, files, and submission attachments. Robust authentication and request handling make the package suitable for automated survey monitoring and downstream analysis.">
+<meta property="og:image" content="https://guturago.github.io/ctoclient/logo.png">
 </head>
 <body>
-<p>
-
-
-
-
-
-
-
-
-  pkgdown/extra-header.html
-
-  
-
-  </p>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -36,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">ctoclient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,13 +37,21 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/managing-connections.html">Managing Connections</a></li>
+<li><h6 class="dropdown-header" data-toc-skip>Getting started</h6></li>
+    <li><a class="dropdown-item" href="articles/managing-connections.html">Managing connections</a></li>
+    <li><a class="dropdown-item" href="articles/form-data.html">Working with form data</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Going further</h6></li>
+    <li><a class="dropdown-item" href="articles/form-documentation.html">Documenting and reviewing a form</a></li>
+    <li><a class="dropdown-item" href="articles/attachments.html">Attachments and media</a></li>
+    <li><a class="dropdown-item" href="articles/server-datasets.html">Managing server datasets</a></li>
+    <li><a class="dropdown-item" href="articles/automation.html">Automating a pipeline</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -75,8 +75,10 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="ctoclient-a-modern-and-flexible-data-pipeline-for-surveycto">ctoclient: A Modern and Flexible Data Pipeline for ‘SurveyCTO’<a class="anchor" aria-label="anchor" href="#ctoclient-a-modern-and-flexible-data-pipeline-for-surveycto"></a>
-</h1></div>
+<div class="page-header">
+<img src="logo.png" class="logo" alt=""><h1 id="ctoclient-a-modern-and-flexible-data-pipeline-for-surveycto-">ctoclient: A Modern and Flexible Data Pipeline for ‘SurveyCTO’ <a class="anchor" aria-label="anchor" href="#ctoclient-a-modern-and-flexible-data-pipeline-for-surveycto-"></a>
+</h1>
+</div>
 <!-- badges: start -->
 
 <p><strong><code>ctoclient</code></strong> is a modern, fast, and flexible high-level R client for the <a href="https://developer.surveycto.com/" class="external-link">SurveyCTO REST API</a>. Built on top of the robust <a href="https://httr2.r-lib.org/" class="external-link">httr2</a> framework, it provides a consistent and pipe-friendly interface for programmatic access to server resources.</p>
@@ -99,15 +101,6 @@
 </ul>
 </div>
 <div class="section level2">
-<h2 id="documentation-upcoming">Documentation (Upcoming)<a class="anchor" aria-label="anchor" href="#documentation-upcoming"></a>
-</h2>
-<ul>
-<li>Managing connections and sessions</li>
-<li>Working with form data</li>
-<li>Managing server data</li>
-</ul>
-</div>
-<div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>Install the stable version from CRAN:</p>
@@ -119,100 +112,52 @@
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"GutUrago/ctoclient"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="id_1-setup--authentication">1. Setup &amp; Authentication<a class="anchor" aria-label="anchor" href="#id_1-setup--authentication"></a>
+<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<p>To keep your credentials secure, <strong>never hard-code passwords</strong> in scripts. <code>ctoclient</code> supports two primary ways to authenticate:</p>
-<p><strong>1. Interactive Prompts (Recommended for Dev)</strong></p>
-<p>If you leave the password blank, <code>ctoclient</code> will securely prompt you for it in the console.</p>
+<p>Connect once, then work. Every function picks up the active session on its own, so there is no connection object to pass around.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://guturago.github.io/ctoclient/">ctoclient</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/cto_connect.html">cto_connect</a></span><span class="op">(</span>server <span class="op">=</span> <span class="st">"myorg"</span>, username <span class="op">=</span> <span class="st">"admin@example.com"</span><span class="op">)</span></span></code></pre></div>
-<p><strong>2. Environment Variables (Recommended for CI/CD)</strong></p>
-<p>To use <code>.Renviron</code> file:</p>
-<ol style="list-style-type: decimal">
-<li>Run <code>usethis::edit_r_environ()</code> to open your environment file.</li>
-<li>Add your credentials:</li>
-</ol>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">SERVER</span><span class="op">=</span><span class="st">"myorg"</span></span>
-<span><span class="va">USER</span><span class="op">=</span><span class="st">"myemail@example.com"</span></span>
-<span><span class="va">PASS</span><span class="op">=</span><span class="st">"mypassword"</span></span></code></pre></div>
-<ol start="3" style="list-style-type: decimal">
-<li>Restart R.</li>
-</ol>
-<p>[!TIP] For even higher security, consider using the <a href="https://keyring.r-lib.org/" class="external-link">keyring</a> package to store passwords in your system’s secure credential store.</p>
-<div class="section level3">
-<h3 id="id_2-working-with-forms-and-data">2. Working with Forms and Data<a class="anchor" aria-label="anchor" href="#id_2-working-with-forms-and-data"></a>
-</h3>
-<p>Download form definitions, data, and attachments.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># List all available forms</span></span>
-<span><span class="va">forms</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_metadata.html">cto_form_ids</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Get metadata form for specific form</span></span>
-<span><span class="fu"><a href="reference/cto_form_metadata.html">cto_form_metadata</a></span><span class="op">(</span><span class="st">'myform'</span><span class="op">)</span></span>
+<span><span class="co"># Leave the password out and you are prompted for it securely</span></span>
+<span><span class="fu"><a href="reference/cto_connect.html">cto_connect</a></span><span class="op">(</span>server <span class="op">=</span> <span class="st">"myorg"</span>, username <span class="op">=</span> <span class="st">"admin@example.com"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Download data for a specific form</span></span>
-<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"myform"</span><span class="op">)</span></span>
+<span><span class="co"># What is on the server?</span></span>
+<span><span class="fu"><a href="reference/cto_metadata.html">cto_form_ids</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Download encrypted data</span></span>
-<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"myform"</span>, <span class="st">"mykey"</span><span class="op">)</span></span>
+<span><span class="co"># Download and tidy submissions</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"baseline_survey"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Download encrypted data in a raw format</span></span>
-<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_form_data.html">cto_form_data</a></span><span class="op">(</span><span class="st">"myform"</span>, <span class="st">"mykey"</span>, tidy <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co"># Download the photos respondents submitted</span></span>
+<span><span class="fu"><a href="reference/cto_form_data_attachment.html">cto_form_data_attachment</a></span><span class="op">(</span><span class="st">"baseline_survey"</span>, fields <span class="op">=</span> <span class="fu">ends_with</span><span class="op">(</span><span class="st">"_img"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Download form submission medias</span></span>
-<span><span class="fu"><a href="reference/cto_form_data_attachment.html">cto_form_data_attachment</a></span><span class="op">(</span><span class="st">'myform'</span>, <span class="fu">ends_with</span><span class="op">(</span><span class="st">'_img'</span><span class="op">)</span>, <span class="st">"mykey"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Download the default form import do-file</span></span>
-<span><span class="fu"><a href="reference/cto_form_languages.html">cto_form_stata_template</a></span><span class="op">(</span><span class="st">'myform'</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Build custom Stata import do-file</span></span>
-<span><span class="fu"><a href="reference/cto_form_dofile.html">cto_form_dofile</a></span><span class="op">(</span><span class="st">'myform'</span>, <span class="st">"form.do"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Download attachments (e.g., photos, audio)</span></span>
-<span><span class="fu"><a href="reference/cto_form_attachment.html">cto_form_attachment</a></span><span class="op">(</span><span class="st">"myform"</span>, dir <span class="op">=</span> <span class="st">"data/attachments"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Label a Stata export, and generate a Word copy of the form for review</span></span>
+<span><span class="fu"><a href="reference/cto_form_dofile.html">cto_form_dofile</a></span><span class="op">(</span><span class="st">"baseline_survey"</span>, path <span class="op">=</span> <span class="st">"baseline_labels.do"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/cto_form_docx.html">cto_form_docx</a></span><span class="op">(</span><span class="st">"baseline_survey"</span>, path <span class="op">=</span> <span class="st">"baseline_review.docx"</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="reference/cto_form_data.html">cto_form_data()</a></code> does real work on your behalf: it types numeric, date and datetime fields from the form definition, drops structural rows, splits geopoints into <code>_lat</code>/<code>_long</code>/<code>_alt</code>/<code>_acc</code>, strips URLs from media columns, and fills in the <code>select_multiple</code> binary columns that the export omits when nobody picked an option. Pass <code>tidy = FALSE</code> to get the server’s raw export instead.</p>
 </div>
-<div class="section level3">
-<h3 id="id_3-server-datasets">3. Server Datasets<a class="anchor" aria-label="anchor" href="#id_3-server-datasets"></a>
-</h3>
-<p>Manage server-side datasets.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># List existing datasets</span></span>
-<span><span class="va">datasets</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_dataset_list.html">cto_dataset_list</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Create server dataset</span></span>
-<span><span class="fu"><a href="reference/cto_dataset_create.html">cto_dataset_create</a></span><span class="op">(</span><span class="st">"mydata"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Upload a local CSV to a server dataset</span></span>
-<span><span class="fu"><a href="reference/cto_dataset_create.html">cto_dataset_upload</a></span><span class="op">(</span><span class="st">"mydata"</span>, <span class="st">"data/mydata.csv"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Download a server dataset to a local file</span></span>
-<span><span class="fu"><a href="reference/cto_dataset_download.html">cto_dataset_download</a></span><span class="op">(</span>dir <span class="op">=</span> <span class="st">"data/downloads"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Purge server dataset</span></span>
-<span><span class="fu"><a href="reference/cto_dataset_delete.html">cto_dataset_purge</a></span><span class="op">(</span><span class="st">"mydata"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Delete server dataset</span></span>
-<span><span class="fu"><a href="reference/cto_dataset_delete.html">cto_dataset_delete</a></span><span class="op">(</span><span class="st">"mydata"</span><span class="op">)</span></span></code></pre></div>
+<div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
+</h2>
+<ul>
+<li>
+<a href="https://guturago.github.io/ctoclient/articles/managing-connections.html">Managing connections</a> — credentials, sessions, multiple servers</li>
+<li>
+<a href="https://guturago.github.io/ctoclient/articles/form-data.html">Working with form data</a> — what tidying does, field by field</li>
+<li>
+<a href="https://guturago.github.io/ctoclient/articles/form-documentation.html">Documenting and reviewing a form</a> — Stata do-files, Word review documents, printable versions</li>
+<li>
+<a href="https://guturago.github.io/ctoclient/articles/attachments.html">Attachments and media</a> — form media and submission files</li>
+<li>
+<a href="https://guturago.github.io/ctoclient/articles/server-datasets.html">Managing server datasets</a> — the upload modes, and how not to lose data</li>
+<li>
+<a href="https://guturago.github.io/ctoclient/articles/automation.html">Automating a pipeline</a> — CI, scheduling, incremental pulls</li>
+</ul>
+<p>The <a href="https://guturago.github.io/ctoclient/reference/index.html">function reference</a> lists everything the package exports, grouped by task.</p>
 </div>
-<div class="section level3">
-<h3 id="id_4-utilities-and-metadata">4. Utilities and Metadata<a class="anchor" aria-label="anchor" href="#id_4-utilities-and-metadata"></a>
-</h3>
-<p>Retrieve server configuration and helper files.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Get server metadata</span></span>
-<span><span class="va">meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cto_metadata.html">cto_metadata</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Generate a Stata template for a form</span></span>
-<span><span class="fu"><a href="reference/cto_form_languages.html">cto_form_languages</a></span><span class="op">(</span><span class="st">"myform"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Get a printable version of the form</span></span>
-<span><span class="fu"><a href="reference/cto_form_languages.html">cto_form_printable</a></span><span class="op">(</span><span class="st">"myform"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Get a mail-merge template of the form</span></span>
-<span><span class="fu"><a href="reference/cto_form_languages.html">cto_form_mail_template</a></span><span class="op">(</span><span class="st">"myform"</span><span class="op">)</span></span></code></pre></div>
-</div>
+<div class="section level2">
+<h2 id="security">Security<a class="anchor" aria-label="anchor" href="#security"></a>
+</h2>
+<p>Never hard-code passwords in a script. Store them in <code>.Renviron</code> (<code>usethis::edit_r_environ()</code>) and read them with <code><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv()</a></code>, or keep them in your system credential store with the <a href="https://keyring.r-lib.org/" class="external-link">keyring</a> package. See <a href="https://guturago.github.io/ctoclient/articles/managing-connections.html">Managing connections</a> for the details.</p>
 </div>
 <div class="section level2">
 <h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
@@ -242,6 +187,13 @@
 </ul>
 </div>
 
+<div class="community">
+<h2 data-toc-skip>Community</h2>
+<ul class="list-unstyled">
+<li><a href="CONTRIBUTING.html">Contributing guide</a></li>
+<li><a href="CODE_OF_CONDUCT.html">Code of conduct</a></li>
+</ul>
+</div>
 
 <div class="citation">
 <h2 data-toc-skip>Citation</h2>
@@ -279,7 +231,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>
@@ -289,6 +241,5 @@
 
 
 
-  
-</body>
+  </body>
 </html>

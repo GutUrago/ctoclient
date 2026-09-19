@@ -2,112 +2,211 @@
 
 Efficiently managing connections is the foundation of a robust data
 pipeline. `ctoclient` is designed to handle both simple single-server
-scripts and complex multi-server environments common in large-scale
-research projects.
+scripts and the multi-server setups common in large-scale research
+projects.
 
-## 1. Authentication Strategies
+## 1. Authentication strategies
 
-**Security First**
+**Security first.** Never store passwords directly in your R scripts. If
+you share your code or push it to GitHub, your credentials go with it.
 
-Never store passwords directly in your R scripts. If you share your code
-or push it to GitHub, your credentials will be exposed.
+### The .Renviron approach
 
-**The .Renviron Approach**
+The most common way to manage credentials is the `.Renviron` file.
+
+1.  Call `usethis::edit_r_environ()`.
+2.  Add your credentials:
+
+&nbsp;
+
+    CTO_SERVER=myorg
+    CTO_USER=admin@example.com
+    CTO_PASS=mypassword123
+
+3.  Restart R for the change to take effect.
+4.  Connect:
 
 ``` r
 
 library(ctoclient)
-```
-
-The most common way to manage credentials is via the .Renviron file.
-
-- Call usethis::edit_r_environ().
-- Add your credentials:
-
-``` r
-
-CTO_SERVER="myorg"
-CTO_USER="admin@example.com"
-CTO_PASS="mypassword123"
-```
-
-- Restart R for changes to take effect.
-
-- Connect using:
-
-``` r
 
 cto_connect(
   server   = Sys.getenv("CTO_SERVER"),
-  user     = Sys.getenv("CTO_USER"),
+  username = Sys.getenv("CTO_USER"),
   password = Sys.getenv("CTO_PASS")
 )
 ```
 
-**Interactive Mode**
+Note that `.Renviron` entries are plain `NAME=value` lines, not R code,
+and that values containing spaces or `#` should be quoted.
 
-If you are working locally and haven’t set up environment variables,
-omit the password:
+### Interactive mode
+
+If you are working locally and have not set up environment variables,
+omit the password and you will be prompted for it securely:
 
 ``` r
 
-cto_connect(server = "myorg", user = "admin@example.com")
-# R will prompt you for the password securely.
+cto_connect(server = "myorg", username = "admin@example.com")
 ```
 
-## 2. Working with Multiple Servers
+### The system keyring
 
-In some projects, you may need to move data between different servers,
-or aggregate data from multiple organizations.
+For the strongest option on a personal machine, keep the password in
+your operating system’s credential store with the
+[keyring](https://keyring.r-lib.org/) package. The secret never touches
+a file in your project:
 
-**The Session System**
+``` r
+
+# Once, interactively:
+keyring::key_set("ctoclient", username = "admin@example.com")
+
+# In every script from then on:
+cto_connect(
+  server   = "myorg",
+  username = "admin@example.com",
+  password = keyring::key_get("ctoclient", username = "admin@example.com")
+)
+```
+
+## 2. What a session is
 
 [`cto_connect()`](https://guturago.github.io/ctoclient/reference/cto_connect.md)
-creates a global session by default. To work with multiple servers, you
-can capture the connection objects and set them explicitly as
-connections.
+authenticates, verifies the credentials, and stores the resulting
+request object inside the package. Every other function picks it up on
+its own, which is why you never pass a connection around:
 
 ``` r
 
-# Connect to Server A 
-conn_a <- cto_connect(
-  server = "org-staging", 
-  user = "admin@email.com", 
-  password = "password1"
-)
+cto_connect("myorg", "admin@example.com")
 
-# Connect to Server B
-conn_b <- cto_connect(
-  server = "org-prod", 
-  user = "admin@email.com", 
-  password = "password2"
-)
-
-# Fetch data from server B
-data_staging <- cto_form_data("baseline_survey")
-
-# Switch the connection to A 
-cto_set_connection(conn_a)
-
-# Upload that same data to a dataset on Server A
-cto_dataset_upload("aggregated_data", data = data_staging,)
+# No connection argument anywhere
+cto_form_ids()
+cto_form_data("baseline_survey")
+cto_dataset_list()
 ```
 
-## 3. Advanced Customization (httr2)
-
-Because ctoclient is built on `httr2`, every connection object contains
-an `httr2_request`. If you need to add custom headers or change the
-timeout for a specific high-latency request, you can modify the
-connection object before passing it to a function.
+[`cto_is_connected()`](https://guturago.github.io/ctoclient/reference/cto_connect.md)
+reports whether a session currently exists. It tells you that
+[`cto_connect()`](https://guturago.github.io/ctoclient/reference/cto_connect.md)
+has been called, not that the server is reachable right now:
 
 ``` r
 
-# Example: Adding a custom user-agent or changing retry logic
-custom_conn <- conn_a |> 
-  httr2::req_user_agent("MyCustomResearchBot/1.0") |>
-  httr2::req_retry(max_tries = 5)
-  
-# Use the customized connection
-cto_set_connection(custom_conn)
+cto_is_connected()
+#> [1] TRUE
+```
+
+### Cookies
+
+By default
+[`cto_connect()`](https://guturago.github.io/ctoclient/reference/cto_connect.md)
+preserves cookies and handles the CSRF token for you. Keep it that way.
+A number of functions reach console endpoints rather than REST
+endpoints, and they abort on a session that carries no cookies:
+
+- [`cto_form_data()`](https://guturago.github.io/ctoclient/reference/cto_form_data.md)
+- [`cto_form_metadata()`](https://guturago.github.io/ctoclient/reference/cto_form_metadata.md)
+  and
+  [`cto_form_definition()`](https://guturago.github.io/ctoclient/reference/cto_form_metadata.md)
+- [`cto_form_languages()`](https://guturago.github.io/ctoclient/reference/cto_form_languages.md),
+  [`cto_form_printable()`](https://guturago.github.io/ctoclient/reference/cto_form_languages.md),
+  [`cto_form_stata_template()`](https://guturago.github.io/ctoclient/reference/cto_form_languages.md)
+  and
+  [`cto_form_mail_template()`](https://guturago.github.io/ctoclient/reference/cto_form_languages.md)
+- [`cto_metadata()`](https://guturago.github.io/ctoclient/reference/cto_metadata.md)
+
+[`cto_form_dofile()`](https://guturago.github.io/ctoclient/reference/cto_form_dofile.md)
+and
+[`cto_form_docx()`](https://guturago.github.io/ctoclient/reference/cto_form_docx.md)
+are in the same position indirectly, since both download the form
+definition first. In other words, `cookies = FALSE` leaves you with the
+dataset functions, the attachment downloads and the listing functions,
+and little else.
+
+## 3. Working with more than one server
+
+Some projects move data between servers, or aggregate across
+organizations.
+[`cto_connect()`](https://guturago.github.io/ctoclient/reference/cto_connect.md)
+returns the session invisibly, so you can capture each one and switch
+between them with
+[`cto_set_connection()`](https://guturago.github.io/ctoclient/reference/cto_connect.md).
+
+``` r
+
+conn_staging <- cto_connect("org-staging", "admin@example.com")
+conn_prod    <- cto_connect("org-prod", "admin@example.com")
+
+# The most recent connect() is the active one, so this reads from prod
+data_prod <- cto_form_data("baseline_survey")
+
+# Switch to staging and write the same data to a dataset there
+cto_set_connection(conn_staging)
+cto_dataset_upload("aggregated_data", file = "data/baseline.csv")
+```
+
+Because the active session is global, a script that switches servers
+should switch deliberately and close to the call that depends on it.
+Interleaving reads from two servers without an intervening
+[`cto_set_connection()`](https://guturago.github.io/ctoclient/reference/cto_connect.md)
+is the easiest way to fetch from the wrong one.
+
+[`cto_dataset_upload()`](https://guturago.github.io/ctoclient/reference/cto_dataset_create.md)
+takes a path to a CSV in its `file` argument. To upload a data frame you
+have in memory, write it out first:
+
+``` r
+
+tmp <- tempfile(fileext = ".csv")
+readr::write_csv(data_prod, tmp)
+cto_dataset_upload("aggregated_data", file = tmp)
+```
+
+## 4. Customizing the underlying request
+
+Every session is an `httr2` request object, so anything `httr2` can do
+to a request you can do to a connection before handing it back to the
+package.
+
+``` r
+
+library(httr2)
+
+custom <- conn_prod |>
+  req_user_agent("MyResearchBot/1.0") |>
+  req_retry(max_tries = 5) |>
+  req_timeout(120)
+
+cto_set_connection(custom)
 cto_form_data("my_form")
 ```
+
+This is the supported way to change retry behaviour, timeouts, proxies
+or headers. Two things to keep in mind: the package sets its own
+throttle (30 requests per minute) which you should only raise if you
+know your server tolerates it, and SurveyCTO rejects parallel requests
+from the same account with a 409, so a retry policy is more useful to
+you than concurrency.
+
+## 5. Verbosity
+
+Most functions report progress through the console. To silence them — in
+a scheduled job, say — set the option:
+
+``` r
+
+options(ctoclient.verbose = FALSE)
+```
+
+Set it back to `TRUE`, or unset it, to get the messages again.
+
+## See also
+
+- [Working with form
+  data](https://guturago.github.io/ctoclient/articles/form-data.md) for
+  what happens to submissions after they are downloaded.
+- [Automating a
+  pipeline](https://guturago.github.io/ctoclient/articles/automation.md)
+  for credentials in CI and scheduled jobs.

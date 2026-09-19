@@ -106,9 +106,11 @@ cto_form_mail_template(form_id, dir = getwd(), type = 2, group_names = FALSE)
 ## See also
 
 Other Form Management Functions:
+[`cto_docx_palette()`](https://guturago.github.io/ctoclient/reference/cto_docx_palette.md),
 [`cto_form_attachment()`](https://guturago.github.io/ctoclient/reference/cto_form_attachment.md),
 [`cto_form_data()`](https://guturago.github.io/ctoclient/reference/cto_form_data.md),
 [`cto_form_data_attachment()`](https://guturago.github.io/ctoclient/reference/cto_form_data_attachment.md),
+[`cto_form_docx()`](https://guturago.github.io/ctoclient/reference/cto_form_docx.md),
 [`cto_form_dofile()`](https://guturago.github.io/ctoclient/reference/cto_form_dofile.md),
 [`cto_form_metadata()`](https://guturago.github.io/ctoclient/reference/cto_form_metadata.md)
 
