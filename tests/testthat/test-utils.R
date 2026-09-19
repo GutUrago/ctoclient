@@ -378,7 +378,7 @@ test_that(
 # ---- build_null_block() ----
 
 test_that(
-  "build_null_block() chunks long lists and loops once per level",
+  "build_null_block() chunks long lists into one local per level",
   {
     nulls <- data.frame(
       stub = c(paste0("n", 1:8), "deep"),
@@ -390,10 +390,39 @@ test_that(
     expect_match(txt, "local nullvars0 n1 n2 n3 n4 n5 n6", fixed = TRUE)
     expect_match(txt, "local nullvars0 `nullvars0' n7 n8", fixed = TRUE)
     expect_match(txt, "local nullvars1 deep", fixed = TRUE)
+  }
+)
 
-    # the pattern is rebuilt from the stub, one loop per level
-    expect_match(txt, "if regexm(\"`var'\", \"^`stub'$\")", fixed = TRUE)
-    expect_match(txt, "if regexm(\"`var'\", \"^`stub'_[0-9]+$\")", fixed = TRUE)
+test_that(
+  "build_null_block() walks the levels with a single loop",
+  {
+    nulls <- data.frame(
+      stub = c("a", "b"),
+      level = c(0, 1),
+      stringsAsFactors = FALSE
+    )
+    out <- build_null_block(nulls)
+    txt <- paste(out, collapse = "\n")
+
+    # one loop over the level index, not one loop per level
+    expect_equal(sum(grepl("foreach stub of local", out, fixed = TRUE)), 1L)
+    expect_match(txt, "forvalues lvl = 0/100 {", fixed = TRUE)
+    # the level names the macro to read
+    expect_match(txt, "local stublist `nullvars`lvl\'\'", fixed = TRUE)
+    # empty levels are skipped
+    expect_match(txt, "if \"`stublist'\" != \"\" {", fixed = TRUE)
+    # and the pattern is rebuilt from the level
+    expect_match(txt, "local suffix `suffix'_[0-9]+", fixed = TRUE)
+    expect_match(txt, "if regexm(\"`var'\", \"^`stub'`suffix'$\")", fixed = TRUE)
+  }
+)
+
+test_that(
+  "build_null_block() respects a different level cap",
+  {
+    nulls <- data.frame(stub = "a", level = 0, stringsAsFactors = FALSE)
+    txt <- paste(build_null_block(nulls, max_level = 20), collapse = "\n")
+    expect_match(txt, "forvalues lvl = 0/20 {", fixed = TRUE)
   }
 )
 

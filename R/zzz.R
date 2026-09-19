@@ -254,18 +254,17 @@ form_null_vars <- function(name, type) {
 }
 
 # Stata block dropping structural fields that hold no data ----
-# Candidates are grouped by repeat level so one loop per level can rebuild the
-# exported name pattern from the stub, the same way the label sections do.
-# Nothing is dropped until Stata has confirmed the variable exists and that
-# every value is missing.
-build_null_block <- function(nulls, per_line = 6) {
+# Candidates are declared one local per repeat level. A single loop walks the
+# level index, skips the levels that are empty, and rebuilds the exported name
+# pattern from the level, the same way the label sections do. Nothing is
+# dropped until Stata has confirmed the variable exists and that every value
+# is missing.
+build_null_block <- function(nulls, per_line = 6, max_level = 100) {
   if (nrow(nulls) == 0) {
     return(character(0))
   }
 
   declarations <- character(0)
-  loops <- character(0)
-
   for (lv in sort(unique(nulls$level))) {
     stubs <- nulls$stub[nulls$level == lv]
     macro <- paste0("nullvars", lv)
@@ -283,34 +282,39 @@ build_null_block <- function(nulls, per_line = 6) {
         )
       )
     }
-
-    pattern <- paste0("^`stub'", strrep("_[0-9]+", lv), "$")
-    loops <- c(
-      loops,
-      str_glue("\tforeach stub of local {macro} {{"),
-      "\t\tcap unab matched : `stub'*",
-      "\t\tif !_rc {",
-      "\t\t\tforeach var of local matched {",
-      str_glue("\t\t\t\tif regexm(\"`var\'\", \"{pattern}\") {{"),
-      "\t\t\t\t\tqui count if !missing(`var')",
-      "\t\t\t\t\tif r(N) == 0 {",
-      "\t\t\t\t\t\tlocal null_confirmed `null_confirmed' `var'",
-      "\t\t\t\t\t}",
-      "\t\t\t\t}",
-      "\t\t\t}",
-      "\t\t}",
-      "\t}",
-      ""
-    )
   }
 
   c(
     declarations,
     "",
     "\tlocal null_confirmed",
-    loops,
+    str_glue("\tforvalues lvl = 0/{max_level} {{"),
+    "\t\tlocal stublist `nullvars`lvl\'\'",
+    "\t\tif \"`stublist\'\" != \"\" {",
+    "\t\t\tlocal suffix",
+    "\t\t\tif `lvl\' > 0 {",
+    "\t\t\t\tforvalues i = 1/`lvl\' {",
+    "\t\t\t\t\tlocal suffix `suffix\'_[0-9]+",
+    "\t\t\t\t}",
+    "\t\t\t}",
+    "\t\t\tforeach stub of local stublist {",
+    "\t\t\t\tcap unab matched : `stub\'*",
+    "\t\t\t\tif !_rc {",
+    "\t\t\t\t\tforeach var of local matched {",
+    "\t\t\t\t\t\tif regexm(\"`var\'\", \"^`stub\'`suffix\'$\") {",
+    "\t\t\t\t\t\t\tqui count if !missing(`var\')",
+    "\t\t\t\t\t\t\tif r(N) == 0 {",
+    "\t\t\t\t\t\t\t\tlocal null_confirmed `null_confirmed\' `var\'",
+    "\t\t\t\t\t\t\t}",
+    "\t\t\t\t\t\t}",
+    "\t\t\t\t\t}",
+    "\t\t\t\t}",
+    "\t\t\t}",
+    "\t\t}",
+    "\t}",
+    "",
     "\tif \"`null_confirmed\'\" != \"\" {",
-    "\t\tdrop `null_confirmed'",
+    "\t\tdrop `null_confirmed\'",
     "\t}",
     ""
   )
