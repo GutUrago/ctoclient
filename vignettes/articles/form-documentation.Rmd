@@ -1,0 +1,195 @@
+---
+title: "Documenting and Reviewing a Form"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+A deployed form is a specification, and like any specification it has to be
+read by people who did not write it: a field manager checking the wording, a
+principal investigator signing off before launch, an analyst working out what
+`hh_size_2` meant. `ctoclient` can produce each of those views from the
+deployed definition, so what people review is what is actually on the tablets.
+
+```{r}
+library(ctoclient)
+cto_connect("myorg", "admin@example.com")
+```
+
+## 1. The definition itself
+
+Everything here starts from the XLSForm.
+
+```{r}
+# Metadata about every deployed and previous version
+meta <- cto_form_metadata("baseline_survey")
+
+# The definition file for the version currently deployed
+path <- cto_form_definition("baseline_survey")
+
+# Or a specific historical version
+old <- cto_form_definition("baseline_survey", version = "20231001")
+```
+
+`cto_form_definition()` writes the `.xlsx` to `dir` (the working directory by
+default) and returns the path invisibly. It does not re-download a file that
+is already there unless you pass `overwrite = TRUE` — convenient in a loop,
+surprising if you deployed a new version five minutes ago and wondered why
+nothing changed.
+
+Read it with `readxl` if you want the sheets directly:
+
+```{r}
+survey   <- readxl::read_excel(path, sheet = "survey")
+choices  <- readxl::read_excel(path, sheet = "choices")
+settings <- readxl::read_excel(path, sheet = "settings")
+```
+
+## 2. A Word document for review
+
+`cto_form_docx()` renders the fields an enumerator actually sees as a
+formatted Word table: variable name, label, hint, choice list, relevance and
+constraint, with rows shaded by field type and groups and repeats as banded
+section headers.
+
+```{r}
+cto_form_docx("baseline_survey", path = "baseline_review.docx")
+```
+
+Calculates, metadata fields (`start`, `end`, `deviceid`, the audit fields) and
+disabled rows are left out, because none of them appear on the tablet. If you
+are debugging rather than reviewing and want them back:
+
+```{r}
+cto_form_docx("baseline_survey", path = "full.docx", show_metadata = TRUE)
+```
+
+The function returns the parsed field table invisibly, which is useful in its
+own right — it is a tidy description of the form:
+
+```{r}
+fields <- cto_form_docx("baseline_survey", path = tempfile(fileext = ".docx"))
+subset(fields, family == "select_one", c(name, label, options))
+```
+
+### Changing the colours
+
+Rows are shaded by *family* rather than by raw type, so `select_one yes_no`
+and `select_one gender` look the same. `cto_docx_palette()` returns the
+defaults:
+
+```{r}
+cto_docx_palette()
+```
+
+Pass a named vector to override any subset of them; names you leave out keep
+their default:
+
+```{r}
+cto_form_docx(
+  "baseline_survey",
+  path = "review.docx",
+  palette = c(numeric = "#FFF2CC", note = "#EDEDED")
+)
+```
+
+### Languages
+
+A multi-language form renders in its `default_language` unless you name one:
+
+```{r}
+cto_form_languages("baseline_survey")
+
+cto_form_docx(
+  "baseline_survey",
+  path = "review_am.docx",
+  language = "Amharic (am)"
+)
+```
+
+## 3. The server's own printable version
+
+SurveyCTO generates its own printable rendering, which `cto_form_printable()`
+downloads:
+
+```{r}
+cto_form_printable("baseline_survey", relevancies = TRUE, constraints = TRUE)
+```
+
+The two are not interchangeable, so it is worth knowing which you want. The
+server's version is laid out like the questionnaire a respondent would be
+read from, and is the better artefact for field staff and for printing.
+`cto_form_docx()` is built locally from the definition and shows variable
+names alongside the labels, which is what a reviewer or an analyst needs and
+what the server's version does not carry.
+
+## 4. Stata labels
+
+`cto_form_dofile()` writes a `.do` file that labels a dataset exported from
+this form: variable labels, value labels, notes, and the loops needed to
+reach every indexed copy of a variable inside a repeat group.
+
+```{r}
+cto_form_dofile("baseline_survey", path = "baseline_labels.do")
+```
+
+It also handles a few things that bite when you do this by hand. Structural
+fields that hold no data are dropped, but only after Stata has confirmed every
+value is missing. String dates and datetimes are converted, but only if the
+variable is still a string, so running the do-file twice cannot wipe them.
+Numeric questions are `destring`ed before their value labels are applied.
+Labels are escaped so that a `$` or a backtick in a question cannot be
+swallowed as a macro reference.
+
+Called without a path, it returns the lines instead of writing them, which is
+handy if you want to append to a larger do-file:
+
+```{r}
+lines <- cto_form_dofile("baseline_survey")
+writeLines(c(readLines("import.do"), lines), "import_labelled.do")
+```
+
+For the server's own import template, which sets up reading the CSV in the
+first place, use:
+
+```{r}
+cto_form_stata_template("baseline_survey")
+```
+
+The two complement each other: the template imports, the do-file labels.
+
+## 5. Mail-merge templates
+
+```{r}
+cto_form_mail_template("baseline_survey")
+```
+
+Useful when a form feeds printed or emailed output and you want the field
+placeholders without transcribing them.
+
+## 6. Keeping documentation current
+
+Because every one of these reads the deployed definition, they are cheap to
+regenerate and worth regenerating rather than editing by hand. A small script
+run after each deployment keeps the review copy honest:
+
+```{r}
+for (form in cto_form_ids()) {
+  cto_form_docx(form, path = file.path("docs", paste0(form, "_review.docx")))
+  cto_form_dofile(form, path = file.path("stata", paste0(form, "_labels.do")))
+}
+```
+
+`cto_form_ids()` returns the form IDs themselves, so it drops straight into a
+loop. For titles, versions and deployment status, use `cto_metadata("forms")`
+instead.
+
+## See also
+
+- [Working with form data](form-data.html) for how the same definition
+  drives the tidying of submissions.

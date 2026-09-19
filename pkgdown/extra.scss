@@ -1,0 +1,37 @@
+// Small refinements on top of the pkgdown Bootstrap 5 template.
+// Everything here is cosmetic; deleting this file changes nothing else.
+
+// Code should read as code: a little tighter and less shouty than body text.
+code, kbd, pre, samp {
+  font-size: 0.875em;
+}
+
+// Reference index: give each section room to breathe so the grouping reads
+// as grouping rather than as one long list.
+.template-reference-index {
+  h2 {
+    margin-top: 2.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+  .section-desc {
+    margin-bottom: 1rem;
+  }
+}
+
+// Tables in the articles carry a lot of the explanation, so make them
+// legible rather than decorative.
+.template-article {
+  table {
+    font-size: 0.925em;
+    margin-bottom: 1.5rem;
+  }
+  thead th {
+    border-bottom: 2px solid var(--bs-border-color);
+  }
+}
+
+// Keep long variable names and expressions from overflowing on a phone.
+td, th {
+  overflow-wrap: anywhere;
+}

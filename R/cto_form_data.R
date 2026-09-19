@@ -33,9 +33,18 @@
 #'   \item **Media fields:** Strips URLs from image, audio, and video fields,
 #'   leaving only the filename.
 #'   \item **Geopoints:** Splits geopoint variables into four columns with
-#'   `_latitude`, `_longitude`, `_altitude`, and `_accuracy` suffixes when
-#'   not already present.
+#'   `_lat`, `_long`, `_alt`, and `_acc` suffixes. The original column is
+#'   kept under its own name.
+#'   \item **Select multiple:** Adds the binary columns that the export omits
+#'   when no respondent picked an option, and fills unselected options with
+#'   `0` for rows that selected at least one. A row that selected nothing
+#'   keeps `NA`, so "asked and answered none" stays distinct from
+#'   "never asked".
 #' }
+#'
+#' Each step is applied independently: if one fails, a message naming the
+#' step is printed and the remaining steps still run, so a partial failure
+#' returns data rather than an error.
 #'
 #' @return
 #' A `data.frame` containing the downloaded submissions.

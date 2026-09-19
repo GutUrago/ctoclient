@@ -1,0 +1,230 @@
+---
+title: "Automating a Pipeline"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+`ctoclient` was built for pipelines that run without anyone watching: nightly
+data pulls, high-frequency checks, dashboards that refresh on a schedule. This
+article covers what changes when nobody is at the console.
+
+## 1. Credentials
+
+An unattended job cannot be prompted, so the password has to come from the
+environment. On a server or a scheduled task, set the variables in
+`.Renviron`, in the service definition, or in the scheduler:
+
+```{r}
+library(ctoclient)
+
+cto_connect(
+  server   = Sys.getenv("CTO_SERVER"),
+  username = Sys.getenv("CTO_USER"),
+  password = Sys.getenv("CTO_PASS")
+)
+```
+
+Fail early and loudly if they are missing, rather than letting the connection
+fail with a less obvious error:
+
+```{r}
+required <- c("CTO_SERVER", "CTO_USER", "CTO_PASS")
+missing  <- required[!nzchar(Sys.getenv(required))]
+if (length(missing)) stop("Missing credentials: ", paste(missing, collapse = ", "))
+```
+
+### GitHub Actions
+
+Store each value as a repository secret and expose it to the step:
+
+```yaml
+- name: Nightly pull
+  env:
+    CTO_SERVER: ${{ secrets.CTO_SERVER }}
+    CTO_USER:   ${{ secrets.CTO_USER }}
+    CTO_PASS:   ${{ secrets.CTO_PASS }}
+  run: Rscript scripts/pull.R
+```
+
+A private key for an encrypted form does not belong in the repository. Write
+it from a secret at run time and delete it afterwards:
+
+```yaml
+- name: Restore key
+  env:
+    CTO_KEY: ${{ secrets.CTO_PRIVATE_KEY }}
+  run: |
+    printf '%s' "$CTO_KEY" > key.pem
+    Rscript scripts/pull.R
+    rm -f key.pem
+```
+
+Whatever the platform, make sure the account the job uses has only the
+permissions it needs. A pipeline that reads submissions does not need rights
+to delete datasets.
+
+## 2. Quieting the console
+
+Progress messages are useful interactively and noise in a log:
+
+```{r}
+options(ctoclient.verbose = FALSE)
+```
+
+Set it once at the top of the script.
+
+## 3. Incremental pulls
+
+`start_date` is applied server-side, so it genuinely reduces the work rather
+than filtering after the fact. For a form that grows over months, pulling
+everything each night is wasteful and eventually slow.
+
+Keep a watermark and ask only for what is new:
+
+```{r}
+state_file <- "state/last_pull.rds"
+
+since <- if (file.exists(state_file)) {
+  readRDS(state_file)
+} else {
+  as.POSIXct("2000-01-01")
+}
+
+new_data <- cto_form_data("baseline_survey", start_date = since)
+
+if (nrow(new_data) > 0) {
+  saveRDS(max(new_data$SubmissionDate), state_file)
+}
+```
+
+Two cautions. Write the watermark only *after* the downstream work succeeds,
+or a mid-script failure will skip records on the next run. And take the
+watermark from `SubmissionDate` rather than the clock, so a submission that
+arrives while the job is running is not stepped over.
+
+For anything you will analyse rather than append to, a full pull remains the
+safer choice: submissions can be edited or re-approved after the fact, and an
+incremental pull will not see those changes.
+
+## 4. Rate limits and parallelism
+
+The session throttles itself to 30 requests per minute. You can raise it, but
+check your server tolerates it first:
+
+```{r}
+conn <- cto_connect(Sys.getenv("CTO_SERVER"), Sys.getenv("CTO_USER"),
+                    Sys.getenv("CTO_PASS"))
+
+conn <- httr2::req_throttle(conn, capacity = 60, fill_time_s = 60)
+cto_set_connection(conn)
+```
+
+**Do not parallelise across forms.** SurveyCTO rejects concurrent requests
+from the same account, so running several pulls at once produces failures
+rather than speed. Loop sequentially and let the throttle pace you.
+
+Retries are the useful knob instead:
+
+```{r}
+conn <- conn |>
+  httr2::req_retry(max_tries = 5) |>
+  httr2::req_timeout(300)
+cto_set_connection(conn)
+```
+
+A long-running form export can take minutes, so raise the timeout before
+concluding the server is down.
+
+## 5. Failing well
+
+Each tidying step inside `cto_form_data()` is wrapped individually: if one
+fails it prints a message and the rest continue. That is helpful
+interactively and dangerous unattended, because a partly-tidied frame is
+returned rather than an error.
+
+Check the result before you trust it:
+
+```{r}
+data <- cto_form_data("baseline_survey")
+
+stopifnot(
+  nrow(data) > 0,
+  inherits(data$SubmissionDate, "POSIXct"),
+  all(c("hh_id", "resp_age") %in% names(data))
+)
+```
+
+Asserting the types you depend on turns a silent partial failure into a loud
+one. Wrap the whole run so a failure reaches a person:
+
+```{r}
+result <- tryCatch(
+  {
+    run_pipeline()
+    "ok"
+  },
+  error = function(e) {
+    notify_team(conditionMessage(e))   # your own code
+    "failed"
+  }
+)
+```
+
+## 6. A complete nightly script
+
+```{r}
+library(ctoclient)
+
+options(ctoclient.verbose = FALSE)
+
+required <- c("CTO_SERVER", "CTO_USER", "CTO_PASS")
+missing  <- required[!nzchar(Sys.getenv(required))]
+if (length(missing)) stop("Missing credentials: ", paste(missing, collapse = ", "))
+
+cto_connect(
+  server   = Sys.getenv("CTO_SERVER"),
+  username = Sys.getenv("CTO_USER"),
+  password = Sys.getenv("CTO_PASS")
+)
+
+forms <- c("baseline_survey", "followup_survey")
+
+for (form in forms) {
+  message("Pulling ", form)
+
+  data <- cto_form_data(form, status = "approved")
+
+  stopifnot(nrow(data) > 0, inherits(data$SubmissionDate, "POSIXct"))
+
+  saveRDS(data, file.path("data", paste0(form, ".rds")))
+
+  cto_form_docx(form, path = file.path("docs", paste0(form, "_review.docx")))
+}
+
+message("Done at ", format(Sys.time()))
+```
+
+Sequential, quiet, asserted, and with the documentation regenerated from the
+deployed definition on every run so it cannot drift.
+
+## 7. Scheduling
+
+On Linux, `cron` calling `Rscript`. On Windows, Task Scheduler. On GitHub
+Actions, a `schedule` trigger. In all three, set the working directory
+explicitly and make sure `.Renviron` is actually read — a cron job runs with a
+minimal environment and often does not pick up the one from your login shell.
+Passing the variables in the crontab entry, or sourcing an environment file in
+a wrapper script, avoids an evening of confusion.
+
+## See also
+
+- [Managing connections](managing-connections.html) for credential storage
+  and multi-server sessions.
+- [Working with form data](form-data.html) for what tidying does and where
+  it can partially fail.

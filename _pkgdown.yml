@@ -7,6 +7,81 @@ authors:
 template:
   light-switch: yes
   bootstrap: 5
-  includes:
-    in_header: pkgdown/extra-header.html
+  bslib:
+    primary: "#1A6E8E"
+    link-color: "#1A6E8E"
 
+# Note: `development: mode: auto` would publish this development version
+# under /dev/ and leave the site root showing the last released build. Worth
+# turning on once 0.2.0 is released; until then the root has to be rebuilt
+# from the development version or it keeps serving stale pages.
+
+navbar:
+  structure:
+    left: [intro, articles, reference, news]
+    right: [search, github, lightswitch]
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: Getting started
+      - text: Managing connections
+        href: articles/managing-connections.html
+      - text: Working with form data
+        href: articles/form-data.html
+      - text: -------
+      - text: Going further
+      - text: Documenting and reviewing a form
+        href: articles/form-documentation.html
+      - text: Attachments and media
+        href: articles/attachments.html
+      - text: Managing server datasets
+        href: articles/server-datasets.html
+      - text: Automating a pipeline
+        href: articles/automation.html
+
+reference:
+- title: Connecting to a server
+  desc: >
+    Authenticate against a SurveyCTO server and manage the session that every
+    other function in the package uses.
+  contents:
+  - cto_connect
+
+- title: Forms and submission data
+  desc: >
+    Download submissions and the form definitions that describe them.
+  contents:
+  - cto_form_data
+  - cto_form_metadata
+  - cto_form_attachment
+  - cto_form_data_attachment
+
+- title: Documenting a form
+  desc: >
+    Turn a form definition into something a human or another package can read:
+    a Stata do-file, a Word review document, or one of the server's own
+    generated files.
+  contents:
+  - cto_form_dofile
+  - cto_form_docx
+  - cto_docx_palette
+  - cto_form_languages
+
+- title: Server datasets
+  desc: >
+    Create, populate, download and remove the server-side datasets that forms
+    pre-load and pull choices from.
+  contents:
+  - cto_dataset_list
+  - cto_dataset_info
+  - cto_dataset_create
+  - cto_dataset_download
+  - cto_dataset_delete
+
+- title: Server metadata and administration
+  desc: >
+    Inspect what a server holds and who can reach it. `cto_form_ids()` lives
+    here because it shares a help page with the other listing functions.
+  contents:
+  - cto_metadata
