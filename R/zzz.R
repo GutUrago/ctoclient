@@ -214,7 +214,8 @@ form_datetime_vars <- function(name, type) {
 
 # Structural fields of a form definition ----
 # Rows that carry no data of their own. `begin repeat` is included because the
-# export names its counter "<name>_count", which sits one repeat level out.
+# export names its counter "<name>_count". Rows without a name, such as end
+# group and end repeat, contribute nothing.
 form_null_vars <- function(name, type) {
   name <- str_squish(name)
   type <- str_squish(type)
@@ -225,83 +226,47 @@ form_null_vars <- function(name, type) {
     TRUE
   )
   is_begin_repeat <- grepl("^begin[ _]repeat", type, TRUE)
-
-  repeat_level <- purrr::accumulate(
-    type,
-    .init = 0,
-    .f = function(i, x) {
-      if (grepl("^begin[ _]repeat", x, TRUE)) {
-        i + 1
-      } else if (grepl("^end[ _]repeat", x, TRUE)) {
-        i - 1
-      } else {
-        i
-      }
-    }
-  )[-1]
-
   stub <- ifelse(is_begin_repeat, paste0(name, "_count"), name)
-  level <- ifelse(is_begin_repeat, repeat_level - 1L, repeat_level)
 
-  keep <- is_null & !is.na(name) & nzchar(name) & level >= 0
-  out <- data.frame(
-    stub = stub[keep],
-    level = level[keep],
-    stringsAsFactors = FALSE
-  )
-  out <- out[!duplicated(out$stub), , drop = FALSE]
-  out[order(out$level, out$stub), , drop = FALSE]
+  keep <- is_null & !is.na(name) & nzchar(name)
+  sort(unique(stub[keep]))
 }
 
 # Stata block dropping structural fields that hold no data ----
-# Candidates are declared one local per repeat level. A single loop walks the
-# level index, skips the levels that are empty, and rebuilds the exported name
-# pattern from the level, the same way the label sections do. Nothing is
-# dropped until Stata has confirmed the variable exists and that every value
-# is missing.
-build_null_block <- function(nulls, per_line = 6, max_level = 100) {
-  if (nrow(nulls) == 0) {
+# The candidates are split across numbered locals only to keep the lines
+# readable. One loop walks those numbers and skips any that is empty. A
+# variable is dropped only once Stata has confirmed it exists and that every
+# value is missing.
+build_null_block <- function(stubs, per_line = 6, max_locals = 100) {
+  if (length(stubs) == 0) {
     return(character(0))
   }
 
-  declarations <- character(0)
-  for (lv in sort(unique(nulls$level))) {
-    stubs <- nulls$stub[nulls$level == lv]
-    macro <- paste0("nullvars", lv)
-    chunks <- split(stubs, ceiling(seq_along(stubs) / per_line))
+  # Never declare more locals than the loop will read.
+  per_line <- max(per_line, ceiling(length(stubs) / max_locals))
+  chunks <- split(stubs, ceiling(seq_along(stubs) / per_line))
 
-    declarations <- c(
-      declarations,
-      str_glue("\tlocal {macro} {paste(chunks[[1]], collapse = ' ')}")
-    )
-    for (k in seq_along(chunks)[-1]) {
-      declarations <- c(
-        declarations,
-        str_glue(
-          "\tlocal {macro} `{macro}' {paste(chunks[[k]], collapse = ' ')}"
-        )
+  declarations <- vapply(
+    seq_along(chunks),
+    function(i) {
+      as.character(
+        str_glue("\tlocal nullvars{i} {paste(chunks[[i]], collapse = ' ')}")
       )
-    }
-  }
+    },
+    character(1)
+  )
 
   c(
     declarations,
     "",
     "\tlocal null_confirmed",
-    str_glue("\tforvalues lvl = 0/{max_level} {{"),
-    "\t\tlocal stublist `nullvars`lvl\'\'",
-    "\t\tif \"`stublist\'\" != \"\" {",
-    "\t\t\tlocal suffix",
-    "\t\t\tif `lvl\' > 0 {",
-    "\t\t\t\tforvalues i = 1/`lvl\' {",
-    "\t\t\t\t\tlocal suffix `suffix\'_[0-9]+",
-    "\t\t\t\t}",
-    "\t\t\t}",
-    "\t\t\tforeach stub of local stublist {",
+    str_glue("\tforvalues i = 1/{max_locals} {{"),
+    "\t\tif \"`nullvars`i\'\'\" != \"\" {",
+    "\t\t\tforeach stub of local nullvars`i\' {",
     "\t\t\t\tcap unab matched : `stub\'*",
     "\t\t\t\tif !_rc {",
     "\t\t\t\t\tforeach var of local matched {",
-    "\t\t\t\t\t\tif regexm(\"`var\'\", \"^`stub\'`suffix\'$\") {",
+    "\t\t\t\t\t\tif regexm(\"`var\'\", \"^`stub\'(_[0-9]+)*$\") {",
     "\t\t\t\t\t\t\tqui count if !missing(`var\')",
     "\t\t\t\t\t\t\tif r(N) == 0 {",
     "\t\t\t\t\t\t\t\tlocal null_confirmed `null_confirmed\' `var\'",

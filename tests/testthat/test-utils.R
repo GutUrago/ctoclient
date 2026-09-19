@@ -336,22 +336,16 @@ test_that(
 # ---- form_null_vars() ----
 
 test_that(
-  "form_null_vars() finds structural fields at the level they are exported",
+  "form_null_vars() finds the fields that carry no data",
   {
     type <- c(
       "note", "begin_group", "integer", "end_group",
       "begin repeat", "note", "integer", "end repeat", "text"
     )
     name <- c("n1", "g1", "q1", "", "rpt", "n2", "q2", "", "q3")
-    out <- form_null_vars(name, type)
 
-    expect_setequal(out$stub, c("n1", "g1", "rpt_count", "n2"))
-    expect_equal(out$level[out$stub == "n1"], 0)
-    expect_equal(out$level[out$stub == "g1"], 0)
-    # the repeat counter sits one level outside the repeat it counts
-    expect_equal(out$level[out$stub == "rpt_count"], 0)
-    # a note inside the repeat is exported once per instance
-    expect_equal(out$level[out$stub == "n2"], 1)
+    # a begin repeat contributes its counter, not its own name
+    expect_equal(form_null_vars(name, type), c("g1", "n1", "n2", "rpt_count"))
   }
 )
 
@@ -360,8 +354,9 @@ test_that(
   {
     spaced <- form_null_vars(c("g", "r"), c("begin group", "begin repeat"))
     under <- form_null_vars(c("g", "r"), c("begin_group", "begin_repeat"))
-    expect_setequal(spaced$stub, under$stub)
-    expect_setequal(under$stub, c("g", "r_count"))
+
+    expect_equal(spaced, under)
+    expect_equal(under, c("g", "r_count"))
   }
 )
 
@@ -370,7 +365,7 @@ test_that(
   {
     type <- c("end_group", "end repeat", "integer", "select_one yn", "geopoint")
     name <- c("", NA, "q1", "q2", "q3")
-    expect_equal(nrow(form_null_vars(name, type)), 0)
+    expect_length(form_null_vars(name, type), 0)
   }
 )
 
@@ -378,59 +373,44 @@ test_that(
 # ---- build_null_block() ----
 
 test_that(
-  "build_null_block() chunks long lists into one local per level",
+  "build_null_block() splits the candidates across numbered locals",
   {
-    nulls <- data.frame(
-      stub = c(paste0("n", 1:8), "deep"),
-      level = c(rep(0, 8), 1),
-      stringsAsFactors = FALSE
+    txt <- paste(
+      build_null_block(paste0("n", 1:8), per_line = 6),
+      collapse = "\n"
     )
-    txt <- paste(build_null_block(nulls, per_line = 6), collapse = "\n")
 
-    expect_match(txt, "local nullvars0 n1 n2 n3 n4 n5 n6", fixed = TRUE)
-    expect_match(txt, "local nullvars0 `nullvars0' n7 n8", fixed = TRUE)
-    expect_match(txt, "local nullvars1 deep", fixed = TRUE)
+    expect_match(txt, "local nullvars1 n1 n2 n3 n4 n5 n6", fixed = TRUE)
+    expect_match(txt, "local nullvars2 n7 n8", fixed = TRUE)
   }
 )
 
 test_that(
-  "build_null_block() walks the levels with a single loop",
+  "build_null_block() reads those locals with a single loop",
   {
-    nulls <- data.frame(
-      stub = c("a", "b"),
-      level = c(0, 1),
-      stringsAsFactors = FALSE
-    )
-    out <- build_null_block(nulls)
+    out <- build_null_block(paste0("n", 1:8), per_line = 6)
     txt <- paste(out, collapse = "\n")
 
-    # one loop over the level index, not one loop per level
     expect_equal(sum(grepl("foreach stub of local", out, fixed = TRUE)), 1L)
-    expect_match(txt, "forvalues lvl = 0/100 {", fixed = TRUE)
-    # the level names the macro to read
-    expect_match(txt, "local stublist `nullvars`lvl\'\'", fixed = TRUE)
-    # empty levels are skipped
-    expect_match(txt, "if \"`stublist'\" != \"\" {", fixed = TRUE)
-    # and the pattern is rebuilt from the level
-    expect_match(txt, "local suffix `suffix'_[0-9]+", fixed = TRUE)
-    expect_match(txt, "if regexm(\"`var'\", \"^`stub'`suffix'$\")", fixed = TRUE)
+    expect_match(txt, "forvalues i = 1/100 {", fixed = TRUE)
+    # the loop index names the local to read, and empty ones are skipped
+    expect_match(txt, "if \"`nullvars`i\'\'\" != \"\" {", fixed = TRUE)
+    expect_match(txt, "foreach stub of local nullvars`i'", fixed = TRUE)
   }
 )
 
 test_that(
-  "build_null_block() respects a different level cap",
+  "build_null_block() matches a stub at any repeat depth",
   {
-    nulls <- data.frame(stub = "a", level = 0, stringsAsFactors = FALSE)
-    txt <- paste(build_null_block(nulls, max_level = 20), collapse = "\n")
-    expect_match(txt, "forvalues lvl = 0/20 {", fixed = TRUE)
+    txt <- paste(build_null_block("n1"), collapse = "\n")
+    expect_match(txt, "if regexm(\"`var'\", \"^`stub'(_[0-9]+)*$\")", fixed = TRUE)
   }
 )
 
 test_that(
   "build_null_block() confirms a variable is empty before dropping it",
   {
-    nulls <- data.frame(stub = "n1", level = 0, stringsAsFactors = FALSE)
-    txt <- paste(build_null_block(nulls), collapse = "\n")
+    txt <- paste(build_null_block("n1"), collapse = "\n")
 
     expect_match(txt, "cap unab matched : `stub'*", fixed = TRUE)
     expect_match(txt, "qui count if !missing(`var')", fixed = TRUE)
@@ -441,9 +421,24 @@ test_that(
 )
 
 test_that(
+  "build_null_block() never declares more locals than the loop reads",
+  {
+    out <- build_null_block(paste0("n", 1:50), per_line = 1, max_locals = 5)
+
+    expect_equal(sum(grepl("^\tlocal nullvars", out)), 5L)
+    expect_true(any(grepl("forvalues i = 1/5 {", out, fixed = TRUE)))
+    # every candidate still reaches a local
+    declared <- unlist(strsplit(
+      sub("^\tlocal nullvars[0-9]+ ", "", grep("^\tlocal nullvars", out, value = TRUE)),
+      " "
+    ))
+    expect_setequal(declared, paste0("n", 1:50))
+  }
+)
+
+test_that(
   "build_null_block() emits nothing when there is nothing to drop",
   {
-    empty <- data.frame(stub = character(0), level = numeric(0))
-    expect_length(build_null_block(empty), 0)
+    expect_length(build_null_block(character(0)), 0)
   }
 )

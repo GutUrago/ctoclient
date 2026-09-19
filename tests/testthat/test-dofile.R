@@ -157,10 +157,13 @@ test_that(
   {
     out <- paste(dofile(), collapse = "\n")
 
-    # note_intro and the underscore-spelled group, plus the repeat counter
-    expect_match(out, "local nullvars0 grp_demog note_intro plot_rpt_count", fixed = TRUE)
-    # a note inside the repeat is exported once per instance
-    expect_match(out, "local nullvars1 note_plot", fixed = TRUE)
+    # the note, the underscore-spelled group, the note inside the repeat,
+    # and the repeat counter
+    expect_match(
+      out,
+      "local nullvars1 grp_demog note_intro note_plot plot_rpt_count",
+      fixed = TRUE
+    )
 
     expect_match(out, "cap unab matched : `stub'*", fixed = TRUE)
     expect_match(out, "qui count if !missing(`var')", fixed = TRUE)
