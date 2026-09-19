@@ -232,6 +232,191 @@ form_null_vars <- function(name, type) {
   sort(unique(stub[keep]))
 }
 
+# Field types never shown to the enumerator ----
+# SurveyCTO records these without ever putting them on the tablet screen.
+# Matched whole, because "date" must not catch "deviceid" and "text" must not
+# catch "text_audit".
+cto_metadata_types <- c(
+  "start", "end", "today", "deviceid", "devicephonenum", "subscriberid",
+  "simserial", "phonenumber", "username", "caseid", "email", "calculate",
+  "calculate_here", "text_audit", "audio_audit", "sensor_statistic",
+  "sensor_stream", "speed_violations_count", "speed_violations_percent",
+  "speed_violations_list", "comments"
+)
+
+# Field family of a form definition row ----
+# The family, not the raw type, drives the row colour, so that
+# "select_one yn" and "select_one sex" shade the same.
+field_family <- function(type) {
+  type <- tolower(str_squish(type))
+
+  dplyr::case_when(
+    grepl("^begin[ _]group", type) ~ "group",
+    grepl("^begin[ _]repeat", type) ~ "repeat",
+    grepl("^end[ _](group|repeat)", type) ~ "end",
+    grepl("^note$", type) ~ "note",
+    grepl("^select_one(_from_file)?( |$)", type) ~ "select_one",
+    grepl("^select_multiple(_from_file)?( |$)", type) ~ "select_multiple",
+    grepl("^(integer|decimal|range)$", type) ~ "numeric",
+    grepl("^(date|time|datetime)$", type) ~ "datetime",
+    grepl("^(geopoint|geotrace|geoshape)$", type) ~ "geo",
+    grepl("^(image|audio|video|file)$", type) ~ "media",
+    grepl("^(text|barcode)$", type) ~ "text",
+    TRUE ~ "other"
+  )
+}
+
+# Pick a column by pattern, preferring a language ----
+# SurveyCTO accepts both "constraint message" and "constraint_message", and
+# label and hint columns may carry a "::language" suffix.
+pick_form_col <- function(df, pattern, lang = NULL) {
+  hits <- names(df)[grepl(pattern, names(df), ignore.case = TRUE)]
+  if (length(hits) == 0) {
+    return(NULL)
+  }
+  if (length(hits) > 1 && !is.null(lang) && !is.na(lang) && nzchar(lang)) {
+    # The default language is written as "English (en)", so it has to be
+    # matched literally rather than as a regular expression.
+    exact <- hits[stringr::str_detect(hits, stringr::fixed(lang, TRUE))]
+    if (length(exact) > 0) {
+      return(exact[1])
+    }
+  }
+  hits[1]
+}
+
+# Column contents, or a column of NA when the column is absent ----
+form_col_or_na <- function(df, nm) {
+  if (is.null(nm)) rep(NA_character_, nrow(df)) else as.character(df[[nm]])
+}
+
+# Choice value exactly as the form spells it ----
+# readxl returns a numeric column whenever every value in the sheet is a
+# number, and a whole number can then come back carrying a decimal the form
+# never had, turning code 1 into "1.0". Printing a numeric column gives every
+# value the same number of decimals, so one fractional code is enough to put
+# one on all the others; stripping a trailing run of zeros afterwards undoes
+# that, and also catches a ".0" that was already text in the sheet. Only
+# zeros after a decimal point go, so "1.5" keeps its digit and codes such as
+# "01", "1.50" or "other" keep their spelling.
+format_choice_value <- function(x) {
+  out <- if (is.numeric(x)) {
+    format(x, trim = TRUE, scientific = FALSE)
+  } else {
+    as.character(x)
+  }
+
+  str_squish(str_replace_all(out, "^([+-]?[0-9]+)\\.0+$", "\\1"))
+}
+
+# Choice list of one select question, one choice per line ----
+# The line breaks are meaningful: they become line breaks inside the cell.
+format_choices <- function(list_name, choices, lang = NULL) {
+  if (is.na(list_name) || !"list_name" %in% names(choices)) {
+    return(NA_character_)
+  }
+
+  rows <- choices[str_squish(choices$list_name) %in% list_name, , drop = FALSE]
+  # A choice with no value cannot be picked, so it is not a choice.
+  rows <- rows[!is.na(rows$value), , drop = FALSE]
+  if (nrow(rows) == 0) {
+    return(NA_character_)
+  }
+
+  label <- form_col_or_na(rows, pick_form_col(rows, "^label", lang))
+  paste0(
+    format_choice_value(rows$value),
+    " = ",
+    str_squish(label),
+    collapse = "\n"
+  )
+}
+
+# Fields of a form definition that the enumerator actually sees ----
+# One row per displayed field, in form order. Group and repeat headers are
+# kept so the document can band and indent them; everything the tablet never
+# shows is dropped.
+form_display_fields <- function(
+  survey,
+  choices,
+  lang = NULL,
+  show_metadata = FALSE
+) {
+  survey <- survey |>
+    mutate(
+      type = str_squish(str_replace_all(.data$type, "\\n", " ")),
+      name = str_squish(str_replace_all(.data$name, "\\n", " ")),
+      family = field_family(.data$type)
+    )
+
+  if (any(grepl("^disabled$", names(survey)))) {
+    survey <- dplyr::filter(survey, !grepl("yes", .data$disabled, TRUE))
+  }
+
+  survey <- survey |>
+    mutate(
+      label = form_col_or_na(survey, pick_form_col(survey, "^label", lang)),
+      hint = form_col_or_na(survey, pick_form_col(survey, "^hint", lang)),
+      constraint_message = form_col_or_na(
+        survey,
+        pick_form_col(survey, "^constraint[ _]message", lang)
+      ),
+      relevance = form_col_or_na(
+        survey,
+        pick_form_col(survey, "^relevance$|^relevant$")
+      ),
+      constraint = form_col_or_na(survey, pick_form_col(survey, "^constraint$")),
+      required = form_col_or_na(survey, pick_form_col(survey, "^required$")),
+      appearance = form_col_or_na(survey, pick_form_col(survey, "^appearance$")),
+      repeat_count = form_col_or_na(
+        survey,
+        pick_form_col(survey, "^repeat_count$")
+      )
+    )
+
+  # Depth is counted before anything is dropped, so a field still knows how
+  # deeply it is nested even when a wrapper row is filtered out. A header
+  # itself sits at its parent's depth.
+  opens <- survey$family %in% c("group", "repeat")
+  closes <- survey$family == "end"
+  survey$depth <- cumsum(opens) - cumsum(closes) - as.integer(opens)
+
+  keep_type <- if (show_metadata) {
+    rep(TRUE, nrow(survey))
+  } else {
+    !tolower(survey$type) %in% cto_metadata_types
+  }
+
+  survey |>
+    dplyr::filter(
+      .data$family != "end",
+      keep_type,
+      !is.na(.data$name),
+      nzchar(.data$name)
+    ) |>
+    mutate(
+      list_name = ifelse(
+        .data$family %in% c("select_one", "select_multiple"),
+        str_extract(.data$type, "(?<= )\\S+"),
+        NA_character_
+      ),
+      options = purrr::map_chr(
+        .data$list_name,
+        format_choices,
+        choices = choices,
+        lang = lang
+      ),
+      is_header = .data$family %in% c("group", "repeat"),
+      # The bands are not questions, so they take no number.
+      seq = cumsum(!.data$is_header)
+    ) |>
+    select(
+      "seq", "family", "type", "name", "label", "hint", "list_name",
+      "options", "relevance", "constraint", "constraint_message", "required",
+      "appearance", "repeat_count", "depth", "is_header"
+    )
+}
+
 # Stata block dropping structural fields that hold no data ----
 # The candidates are split across numbered locals only to keep the lines
 # readable. One loop walks those numbers and skips any that is empty. A
