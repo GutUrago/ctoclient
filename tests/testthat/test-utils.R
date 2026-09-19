@@ -373,7 +373,7 @@ test_that(
 # ---- build_null_block() ----
 
 test_that(
-  "build_null_block() splits the candidates across numbered locals",
+  "build_null_block() wraps a long list by appending to the same local",
   {
     txt <- paste(
       build_null_block(paste0("n", 1:8), per_line = 6),
@@ -381,7 +381,23 @@ test_that(
     )
 
     expect_match(txt, "local nullvars1 n1 n2 n3 n4 n5 n6", fixed = TRUE)
-    expect_match(txt, "local nullvars2 n7 n8", fixed = TRUE)
+    expect_match(txt, "local nullvars1 `nullvars1' n7 n8", fixed = TRUE)
+    # wrapping a line must not open a second local
+    expect_no_match(txt, "local nullvars2", fixed = TRUE)
+  }
+)
+
+test_that(
+  "build_null_block() opens a new local once one is full",
+  {
+    txt <- paste(
+      build_null_block(paste0("n", 1:5), per_line = 2, per_local = 4),
+      collapse = "\n"
+    )
+
+    expect_match(txt, "local nullvars1 n1 n2", fixed = TRUE)
+    expect_match(txt, "local nullvars1 `nullvars1' n3 n4", fixed = TRUE)
+    expect_match(txt, "local nullvars2 n5", fixed = TRUE)
   }
 )
 
@@ -423,16 +439,41 @@ test_that(
 test_that(
   "build_null_block() never declares more locals than the loop reads",
   {
-    out <- build_null_block(paste0("n", 1:50), per_line = 1, max_locals = 5)
+    # asking for 1 name per local would need 50 of them; the block has to
+    # widen the locals instead of declaring more than the loop can read
+    out <- build_null_block(
+      paste0("n", 1:50),
+      per_line = 4,
+      per_local = 1,
+      max_locals = 5
+    )
 
-    expect_equal(sum(grepl("^\tlocal nullvars", out)), 5L)
+    declared <- grep("^\tlocal nullvars", out, value = TRUE)
+    macros <- unique(sub("^\tlocal (nullvars[0-9]+).*", "\\1", declared))
+    expect_length(macros, 5L)
     expect_true(any(grepl("forvalues i = 1/5 {", out, fixed = TRUE)))
-    # every candidate still reaches a local
-    declared <- unlist(strsplit(
-      sub("^\tlocal nullvars[0-9]+ ", "", grep("^\tlocal nullvars", out, value = TRUE)),
-      " "
+
+    # every candidate still reaches a local, whether the line opened it
+    # or appended to it
+    names_only <- sub("^\tlocal nullvars[0-9]+ (`nullvars[0-9]+' )?", "", declared)
+    expect_setequal(unlist(strsplit(names_only, " ")), paste0("n", 1:50))
+  }
+)
+
+test_that(
+  "build_null_block() holds far more candidates than it has locals",
+  {
+    out <- build_null_block(paste0("n", 1:2000))
+
+    macros <- unique(sub(
+      "^\tlocal (nullvars[0-9]+).*", "\\1",
+      grep("^\tlocal nullvars", out, value = TRUE)
     ))
-    expect_setequal(declared, paste0("n", 1:50))
+    expect_lte(length(macros), 100L)
+
+    declared <- grep("^\tlocal nullvars", out, value = TRUE)
+    names_only <- sub("^\tlocal nullvars[0-9]+ (`nullvars[0-9]+' )?", "", declared)
+    expect_setequal(unlist(strsplit(names_only, " ")), paste0("n", 1:2000))
   }
 )
 

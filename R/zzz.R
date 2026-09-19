@@ -237,24 +237,38 @@ form_null_vars <- function(name, type) {
 # readable. One loop walks those numbers and skips any that is empty. A
 # variable is dropped only once Stata has confirmed it exists and that every
 # value is missing.
-build_null_block <- function(stubs, per_line = 6, max_locals = 100) {
+build_null_block <- function(stubs,
+                             per_line = 6,
+                             per_local = 60,
+                             max_locals = 100) {
   if (length(stubs) == 0) {
     return(character(0))
   }
 
-  # Never declare more locals than the loop will read.
-  per_line <- max(per_line, ceiling(length(stubs) / max_locals))
-  chunks <- split(stubs, ceiling(seq_along(stubs) / per_line))
+  # Never need more locals than the loop will read.
+  per_local <- max(per_local, ceiling(length(stubs) / max_locals))
+  groups <- split(stubs, ceiling(seq_along(stubs) / per_local))
 
-  declarations <- vapply(
-    seq_along(chunks),
-    function(i) {
-      as.character(
-        str_glue("\tlocal nullvars{i} {paste(chunks[[i]], collapse = ' ')}")
+  declarations <- character(0)
+  for (g in seq_along(groups)) {
+    macro <- paste0("nullvars", g)
+    lines <- split(groups[[g]], ceiling(seq_along(groups[[g]]) / per_line))
+
+    # The first line opens the local, the rest append to it, so a long list
+    # stays readable without needing a local per line.
+    declarations <- c(
+      declarations,
+      str_glue("\tlocal {macro} {paste(lines[[1]], collapse = ' ')}")
+    )
+    for (k in seq_along(lines)[-1]) {
+      declarations <- c(
+        declarations,
+        str_glue(
+          "\tlocal {macro} `{macro}' {paste(lines[[k]], collapse = ' ')}"
+        )
       )
-    },
-    character(1)
-  )
+    }
+  }
 
   c(
     declarations,
