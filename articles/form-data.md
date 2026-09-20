@@ -35,7 +35,7 @@ timestamp, so it is a genuine reduction in what crosses the network, not
 a filter applied afterwards. It must be a `POSIXct`; the default reaches
 back to 2000. This is the argument that makes incremental pulls cheap —
 see [Automating a
-pipeline](https://guturago.github.io/ctoclient/articles/automation.md).
+pipeline](https://guturago.github.io/ctoclient/articles/automation.html).
 
 **`status`** takes any combination of `"approved"`, `"rejected"` and
 `"pending"`. All three are included by default, which is worth knowing:
@@ -206,8 +206,8 @@ raw input.
 ## See also
 
 - [Attachments and
-  media](https://guturago.github.io/ctoclient/articles/attachments.md)
+  media](https://guturago.github.io/ctoclient/articles/attachments.html)
   to download the files these columns name.
 - [Documenting and reviewing a
-  form](https://guturago.github.io/ctoclient/articles/form-documentation.md)
+  form](https://guturago.github.io/ctoclient/articles/form-documentation.html)
   to see the definition that drives all of the above.

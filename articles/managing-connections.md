@@ -208,5 +208,5 @@ Set it back to `TRUE`, or unset it, to get the messages again.
   data](https://guturago.github.io/ctoclient/articles/form-data.md) for
   what happens to submissions after they are downloaded.
 - [Automating a
-  pipeline](https://guturago.github.io/ctoclient/articles/automation.md)
+  pipeline](https://guturago.github.io/ctoclient/articles/automation.html)
   for credentials in CI and scheduled jobs.
