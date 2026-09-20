@@ -80,7 +80,14 @@ if (requireNamespace("httptest2", quietly = TRUE)) {
         expect_s3_class(cto_dataset_list(), "data.frame")
         expect_no_error(cto_dataset_info(cto_dataset_list()$id[1]))
         csv <- file.path(tempdir(), "band_members.csv")
-        utils::write.csv(dplyr::band_members, csv)
+        # httptest2 names the mock file after a hash of the request body, and
+        # for an upload that body carries a hash of the file's contents. A
+        # text-mode connection writes CRLF on Windows and LF everywhere else,
+        # which would give one test two different mock file names, so the file
+        # is written in binary mode to fix the bytes on every platform.
+        con <- file(csv, open = "wb")
+        utils::write.csv(dplyr::band_members, con)
+        close(con)
         expect_no_error(cto_dataset_create("band_members"))
         expect_no_error(cto_dataset_upload("band_members", csv))
         expect_no_error(cto_dataset_download(dir = tempdir(), overwrite = TRUE))

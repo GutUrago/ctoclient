@@ -192,5 +192,5 @@ Set it back to `TRUE`, or unset it, to get the messages again.
 
 - [Working with form data](form-data.html) for what happens to submissions
   after they are downloaded.
-- [Automating a pipeline](automation.html) for credentials in CI and
+- [Automating a pipeline](https://guturago.github.io/ctoclient/articles/automation.html) for credentials in CI and
   scheduled jobs.
