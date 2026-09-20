@@ -2,6 +2,8 @@
 
 ## ctoclient 0.2.0
 
+CRAN release: 2026-09-20
+
 **cto_form_data**
 
 - Correctly handles date-times, geopoints,
