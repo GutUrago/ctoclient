@@ -51,23 +51,36 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="ctoclient-020">ctoclient 0.2.0<a class="anchor" aria-label="anchor" href="#ctoclient-020"></a></h2>
-</div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.0.9000" id="ctoclient-0109000">ctoclient 0.1.0.9000<a class="anchor" aria-label="anchor" href="#ctoclient-0109000"></a></h2>
-<p><strong>cto_form_data</strong> * Returns <code>datetime</code> questions as date-times. They were also matched by the date pattern and converted to <code>Date</code>, dropping the time of day * Keeps the original geopoint column under its own name. Splitting renamed it to <code>&lt;name&gt;_&lt;name&gt;</code> * Splits geopoints even when one point has an unexpected number of parts. A single malformed point previously skipped the split for the whole form * Reads the choice list of a <code>select_multiple ... or_other</code> question from the list name instead of <code>or_other</code>, which produced an empty <code>&lt;question&gt;_NA</code> column * No longer overwrites a question named <code>any_selected</code> * Recognises a form that has no submissions</p>
-<p><strong>cto_form_dofile</strong> * Converts date and date-time fields to Stata numeric formats at the top of the do-file, using the fields found in the form definition * Adds <code>destring</code> before every value label, and before the label of each integer and decimal question * Uses <code>note x: text</code>. <code>note variable x</code> is not a Stata command, so notes were never applied to plain variables, and the quotes around the text were stored as part of the note * Takes value label names from the choice lists themselves. They could previously be attached to the wrong list * Escapes <code>$</code> and backticks in labels, which Stata expanded as macro references * Prefixes <code>label define</code> with <code>cap</code>, so one list name that Stata rejects no longer discards every label after it * Skips choice values Stata cannot use as value labels * Reads the default language literally, so <code>English (en)</code> matches its own label column * Writes the do-file as UTF-8 * Respects <code>options(ctoclient.verbose = FALSE)</code></p>
-<p><strong>cto_connect</strong> * Rejects a server name containing characters that change the shape of a URL, such as <code>/</code>, <code>?</code>, <code>#</code> or <code>@</code> * Warns when <code>server</code> is given as a full host name * Reports the original HTTP error when the error body has an unexpected shape</p>
-<p><strong>Server datasets</strong> * <code><a href="../reference/cto_dataset_create.html">cto_dataset_upload()</a></code> validates <code>id</code>, and all dataset functions reject an <code>id</code> that is not URL safe * <code><a href="../reference/cto_dataset_download.html">cto_dataset_download()</a></code> and <code><a href="../reference/cto_form_attachment.html">cto_form_attachment()</a></code> no longer let a server-supplied name write outside the requested directory</p>
-<p><strong>Other</strong> * Requires httr2 (&gt;= 1.2.0). <code><a href="https://httr2.r-lib.org/reference/req_get_url.html" class="external-link">req_get_url()</a></code> and the current form of <code><a href="https://httr2.r-lib.org/reference/req_throttle.html" class="external-link">req_throttle()</a></code> are not available before then, so <code><a href="../reference/cto_connect.html">cto_connect()</a></code> failed outright on older versions * Paginated endpoints stop if the server stops advancing the cursor * The test suite runs offline from recorded fixtures rather than only when server credentials are set</p>
-</div>
+<p><strong>cto_form_data</strong></p>
+<ul><li>Correctly handles date-times, geopoints, <code>select_multiple ... or_other</code>, <code>any_selected</code>, and forms with no submissions.</li>
+<li>Improves robustness when parsing malformed geopoints.</li>
+</ul><p><strong>cto_form_dofile</strong></p>
+<ul><li>Improves date/date-time conversion, value labels, notes, escaping, and UTF-8 output.</li>
+<li>Respects <code>ctoclient.verbose</code> and handles invalid Stata labels more safely.</li>
+</ul><p><strong>cto_connect &amp; datasets</strong></p>
+<ul><li>Validates URL-safe server and dataset IDs.</li>
+<li>Improves HTTP error reporting and prevents server-supplied filenames from writing outside the requested directory.</li>
+</ul><p><strong>Other</strong></p>
+<ul><li>Requires <code>httr2 (&gt;= 1.2.0)</code>.</li>
+<li>Safely handles stalled pagination.</li>
+<li>Tests now run offline using recorded fixtures.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="ctoclient-010">ctoclient 0.1.0<a class="anchor" aria-label="anchor" href="#ctoclient-010"></a></h2><p class="text-muted">CRAN release: 2026-03-28</p>
-<p><strong>cto_form_dofile</strong> * Skips dynamic value labels * Other minor improvements</p>
-</div>
+<p><strong>cto_form_dofile</strong></p>
+<ul><li><p>Skips dynamic value labels</p></li>
+<li><p>Other minor improvements</p></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.2" id="ctoclient-002">ctoclient 0.0.2<a class="anchor" aria-label="anchor" href="#ctoclient-002"></a></h2>
-<p><strong>cto_form_data</strong> * Ensures all non-selected multi-select options are included when any related binary variables are present * Replaces missing values with 0 for unselected multi-select binary variables * Standardizes GPS field names using concise suffixes: lat, long, acc, and alt * Provides more informative and user-friendly error messages during the tidying process * Orders select_multiple binary variables according to their defined values * Other minor improvement</p>
-</div>
+<p><strong>cto_form_data</strong></p>
+<ul><li>Ensures all non-selected multi-select options are included when any related binary variables are present</li>
+<li>Replaces missing values with 0 for unselected multi-select binary variables</li>
+<li>Standardizes GPS field names using concise suffixes: lat, long, acc, and alt</li>
+<li>Provides more informative and user-friendly error messages during the tidying process</li>
+<li>Orders select_multiple binary variables according to their defined values</li>
+<li>Other minor improvement</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.1" id="ctoclient-001">ctoclient 0.0.1<a class="anchor" aria-label="anchor" href="#ctoclient-001"></a></h2><p class="text-muted">CRAN release: 2026-02-19</p>
 <p>Initial CRAN Submission</p>
