@@ -1,4 +1,5 @@
 #' @importFrom cli cli_abort cli_warn cli_inform col_blue cli_progress_step
+#' @importFrom cli cli_progress_bar cli_progress_update cli_progress_done
 #' @importFrom stringr str_c str_glue str_extract str_squish str_replace_all str_remove_all
 #' @importFrom httr2 req_url req_url_path req_url_query req_perform resp_body_json resp_body_raw
 #' @importFrom checkmate assert_string assert_flag assert_character assert_directory
@@ -584,7 +585,10 @@ gen_regex_varname <- function(name, rpt_lvl, multi, mp = "_*[0-9]+") {
       return(paste0("^", name, "$"))
     }
   } else {
-    rpt <- strrep("_[0-9]+", rpt_lvl)
+    # The repeat index is optional and repeatable, so one pattern covers the
+    # bare name, the indexed copies an export normally has, and the further
+    # indices a nested repeat adds.
+    rpt <- "(_[0-9]+)*"
     if (multi) {
       return(paste0("^", name, mp, rpt, "$"))
     } else {

@@ -30,6 +30,7 @@ raw_export <- function() {
     crops_1 = c("1", NA),
     gps = c("9.03 38.74 2355 4.9", "8.98 38.80 2400 5.1"),
     illness_1 = c("1", NA),
+    plot_rpt_count = c("1", "1"),
     plot_size_1 = c("2", "3"),
     stringsAsFactors = FALSE
   )
@@ -145,5 +146,24 @@ test_that(
   {
     expect_warning(out <- tidy_export(list()), "No submissions")
     expect_length(out, 0)
+  }
+)
+
+
+test_that(
+  "a repeat counter is placed in form order, not left at the end",
+  {
+    out <- tidy_export()
+
+    # the counter belongs to the begin repeat row, so it is ordered with the
+    # form rather than swept to the end by everything()
+    expect_true("plot_rpt_count" %in% names(out))
+    expect_lt(
+      match("plot_rpt_count", names(out)),
+      match("plot_size_1", names(out))
+    )
+    # and it is not the last column, which is where an unrecognised column
+    # would land
+    expect_lt(match("plot_rpt_count", names(out)), length(names(out)))
   }
 )
