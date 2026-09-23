@@ -100,10 +100,11 @@ cto_form_data_attachment <- function(
   if (length(paths_to_fetch) > 0) {
     # A form can carry thousands of photos, so this reports how far along the
     # download is rather than only that it started.
+    n <- length(paths_to_fetch)
     if (verbose) {
       bar <- cli_progress_bar(
-        "Downloading {.val {length(paths_to_fetch)}} attachment{?s}",
-        total = length(paths_to_fetch)
+        format = "Downloaded {cli::pb_current}/{cli::pb_total} ({cli::pb_percent}) of {cli::pb_total} attachments",
+        total = n
       )
     }
     if (!is.null(private_key)) {
