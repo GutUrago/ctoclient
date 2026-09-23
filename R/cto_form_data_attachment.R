@@ -103,7 +103,9 @@ cto_form_data_attachment <- function(
     n <- length(paths_to_fetch)
     if (verbose) {
       bar <- cli_progress_bar(
-        format = "Downloaded {cli::pb_current}/{cli::pb_total} ({cli::pb_percent}) of {cli::pb_total} attachments",
+        format = "Downloaded{cli::pb_percent} ({cli::pb_current}) of {cli::pb_total} attachments",
+        format_done = "Downloaded {cli::pb_total} attachments",
+        type = "download",
         total = n
       )
     }
