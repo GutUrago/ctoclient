@@ -1,5 +1,7 @@
 # Changelog
 
+## ctoclient 0.2.2
+
 ## ctoclient 0.2.1
 
 ## ctoclient 0.2.0
