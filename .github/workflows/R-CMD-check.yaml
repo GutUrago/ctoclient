@@ -38,6 +38,13 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
+      # gdtools, which flextable imports, ships a binary linked against
+      # XQuartz. The runner does not have it, so loading flextable fails
+      # with a missing libXrender.1.dylib.
+      - name: Install XQuartz
+        if: runner.os == 'macOS'
+        run: brew install --cask xquartz
+
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
