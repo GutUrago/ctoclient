@@ -1,6 +1,11 @@
 # ctoclient 0.2.2
 
+* Some minor bug fixes
+
 # ctoclient 0.2.1
+
+* The main added feature is that `cto_form_docx()` function is added to 
+generate a word document version of the deployed form.
 
 # ctoclient 0.2.0
 
