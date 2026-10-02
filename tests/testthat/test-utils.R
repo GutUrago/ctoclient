@@ -517,3 +517,84 @@ test_that(
     expect_false(grepl(gen_regex_varname("rpt", 1, FALSE), "rpt_count"))
   }
 )
+
+
+# ---- SurveyCTO timestamps ----
+
+test_that(
+  "normalise_cto_timestamp() rewrites an export timestamp without a locale",
+  {
+    expect_identical(
+      normalise_cto_timestamp("March 12, 2026 10:05:00 AM"),
+      "2026-03-12 10:05:00"
+    )
+    # noon stays at 12, midnight becomes 00
+    expect_identical(
+      normalise_cto_timestamp("July 4, 2026 12:00:00 PM"),
+      "2026-07-04 12:00:00"
+    )
+    expect_identical(
+      normalise_cto_timestamp("July 4, 2026 12:30:00 AM"),
+      "2026-07-04 00:30:00"
+    )
+    expect_identical(
+      normalise_cto_timestamp("December 31, 2026 11:59:59 PM"),
+      "2026-12-31 23:59:59"
+    )
+    # a date with no time keeps just the date
+    expect_identical(normalise_cto_timestamp("March 12, 2026"), "2026-03-12")
+    # strptime takes the abbreviated month for %B, so this does too
+    expect_identical(normalise_cto_timestamp("Mar 12, 2026"), "2026-03-12")
+  }
+)
+
+test_that(
+  "normalise_cto_timestamp() returns NA for anything it cannot read",
+  {
+    expect_true(is.na(normalise_cto_timestamp(NA_character_)))
+    expect_true(is.na(normalise_cto_timestamp("")))
+    expect_true(is.na(normalise_cto_timestamp("Marchx 12, 2026")))
+    expect_true(is.na(normalise_cto_timestamp("2026-03-12")))
+  }
+)
+
+test_that(
+  "the parsers fall back when the platform cannot read the format",
+  {
+    # A CRAN macOS check returned NA for every "%I:%M:%S %p" timestamp. The
+    # padded string below is one the platform format genuinely cannot read
+    # here either, so it exercises the same fallback.
+    padded <- "  March 12, 2026 10:05:00 AM  "
+    expect_true(is.na(as.POSIXct(padded, format = "%B %d, %Y %I:%M:%S %p")))
+    expect_identical(
+      format(parse_cto_datetime(padded), "%Y-%m-%d %H:%M:%S"),
+      "2026-03-12 10:05:00"
+    )
+
+    expect_true(is.na(as.Date("  March 12, 2026  ", format = "%B %d, %Y")))
+    expect_identical(
+      as.character(parse_cto_date("  March 12, 2026  ")),
+      "2026-03-12"
+    )
+  }
+)
+
+test_that(
+  "the parsers keep whatever the platform already read correctly",
+  {
+    x <- c("March 12, 2026 10:05:00 AM", "July 4, 2026 12:00:00 PM", NA)
+    expect_identical(parse_cto_datetime(x), as.POSIXct(x, format = "%B %d, %Y %I:%M:%S %p"))
+
+    d <- c("March 12, 2026", "December 1, 2026", NA)
+    expect_identical(parse_cto_date(d), as.Date(d, format = "%B %d, %Y"))
+  }
+)
+
+test_that(
+  "the parsers leave a column that is already a date alone",
+  {
+    now <- as.POSIXct("2026-03-12 10:05:00")
+    expect_identical(parse_cto_datetime(now), as.POSIXct(now, format = "x"))
+    expect_identical(parse_cto_date(as.Date("2026-03-12")), as.Date("2026-03-12"))
+  }
+)

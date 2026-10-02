@@ -396,7 +396,7 @@ cto_form_data <- function(
         tidy_data,
         across(
           matches(datetime_fields),
-          ~ as.POSIXct(.x, format = "%B %d, %Y %I:%M:%S %p")
+          parse_cto_datetime
         )
       )
     },
@@ -428,7 +428,7 @@ cto_form_data <- function(
       if (length(date_fields) > 0) {
         mutate(
           tidy_data,
-          across(matches(date_fields), ~ as.Date(.x, format = "%B %d, %Y"))
+          across(matches(date_fields), parse_cto_date)
         )
       } else {
         tidy_data

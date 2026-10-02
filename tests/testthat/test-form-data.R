@@ -167,3 +167,28 @@ test_that(
     expect_lt(match("plot_rpt_count", names(out)), length(names(out)))
   }
 )
+
+
+test_that(
+  "the tidying step parses timestamps the platform format cannot read",
+  {
+    # A CRAN macOS check turned every datetime into NA while the plain date
+    # parsed fine, so the pipeline must not depend on the platform reading
+    # "%B %d, %Y %I:%M:%S %p". The padded strings below are ones it genuinely
+    # cannot read here either.
+    raw <- raw_export()
+    raw$interview_dt <- c("  March 12, 2026 10:05:00 AM  ", raw$interview_dt[2])
+    raw$visit_date <- c("  March 12, 2026  ", raw$visit_date[2])
+
+    expect_true(is.na(
+      as.POSIXct(raw$interview_dt[1], format = "%B %d, %Y %I:%M:%S %p")
+    ))
+    expect_true(is.na(as.Date(raw$visit_date[1], format = "%B %d, %Y")))
+
+    out <- tidy_export(raw)
+
+    expect_s3_class(out$interview_dt, "POSIXct")
+    expect_equal(format(out$interview_dt[1], "%H:%M:%S"), "10:05:00")
+    expect_equal(as.character(out$visit_date[1]), "2026-03-12")
+  }
+)
