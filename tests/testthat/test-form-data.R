@@ -180,11 +180,6 @@ test_that(
     raw$interview_dt <- c("  March 12, 2026 10:05:00 AM  ", raw$interview_dt[2])
     raw$visit_date <- c("  March 12, 2026  ", raw$visit_date[2])
 
-    expect_true(is.na(
-      as.POSIXct(raw$interview_dt[1], format = "%B %d, %Y %I:%M:%S %p")
-    ))
-    expect_true(is.na(as.Date(raw$visit_date[1], format = "%B %d, %Y")))
-
     out <- tidy_export(raw)
 
     expect_s3_class(out$interview_dt, "POSIXct")

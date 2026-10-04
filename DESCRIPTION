@@ -2,7 +2,7 @@ Package: ctoclient
 Type: Package
 Title: A Modern and Flexible Data Pipeline for 'SurveyCTO'
 Version: 0.2.2
-Date: 2026-10-02
+Date: 2026-10-04
 Authors@R: c(
     person(
       "Gutama Girja", "Urago",

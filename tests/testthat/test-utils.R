@@ -559,19 +559,35 @@ test_that(
 )
 
 test_that(
-  "the parsers fall back when the platform cannot read the format",
+  "the parsers read an export timestamp whatever the platform does",
   {
-    # A CRAN macOS check returned NA for every "%I:%M:%S %p" timestamp. The
-    # padded string below is one the platform format genuinely cannot read
-    # here either, so it exercises the same fallback.
-    padded <- "  March 12, 2026 10:05:00 AM  "
-    expect_true(is.na(as.POSIXct(padded, format = "%B %d, %Y %I:%M:%S %p")))
+    # These assert the value the parser must produce, never what the
+    # platform's own strptime makes of the string: a CRAN M1 mac reads
+    # "%B %d, %Y %I:%M:%S %p" as NA throughout, so comparing against it
+    # compares against a moving target.
+    x <- c("March 12, 2026 10:05:00 AM", "July 4, 2026 12:00:00 PM", NA)
     expect_identical(
-      format(parse_cto_datetime(padded), "%Y-%m-%d %H:%M:%S"),
-      "2026-03-12 10:05:00"
+      format(parse_cto_datetime(x), "%Y-%m-%d %H:%M:%S"),
+      c("2026-03-12 10:05:00", "2026-07-04 12:00:00", NA)
     )
 
-    expect_true(is.na(as.Date("  March 12, 2026  ", format = "%B %d, %Y")))
+    d <- c("March 12, 2026", "December 1, 2026", NA)
+    expect_identical(
+      as.character(parse_cto_date(d)),
+      c("2026-03-12", "2026-12-01", NA)
+    )
+  }
+)
+
+test_that(
+  "the parsers read a timestamp the platform format cannot",
+  {
+    # Padding is one thing no platform's strptime accepts for this format,
+    # so these only pass through the rewritten, all-numeric path.
+    expect_identical(
+      format(parse_cto_datetime("  March 12, 2026 10:05:00 AM  "), "%H:%M:%S"),
+      "10:05:00"
+    )
     expect_identical(
       as.character(parse_cto_date("  March 12, 2026  ")),
       "2026-03-12"
@@ -580,21 +596,10 @@ test_that(
 )
 
 test_that(
-  "the parsers keep whatever the platform already read correctly",
-  {
-    x <- c("March 12, 2026 10:05:00 AM", "July 4, 2026 12:00:00 PM", NA)
-    expect_identical(parse_cto_datetime(x), as.POSIXct(x, format = "%B %d, %Y %I:%M:%S %p"))
-
-    d <- c("March 12, 2026", "December 1, 2026", NA)
-    expect_identical(parse_cto_date(d), as.Date(d, format = "%B %d, %Y"))
-  }
-)
-
-test_that(
   "the parsers leave a column that is already a date alone",
   {
     now <- as.POSIXct("2026-03-12 10:05:00")
-    expect_identical(parse_cto_datetime(now), as.POSIXct(now, format = "x"))
+    expect_identical(parse_cto_datetime(now), now)
     expect_identical(parse_cto_date(as.Date("2026-03-12")), as.Date("2026-03-12"))
   }
 )
