@@ -7,23 +7,33 @@
 
 ## ctoclient 0.2.2
 
-**cto_form_dofile** \* Drops null fields by their exact name as well as
-their repeat-suffixed names \* Labels the bare variable alongside its
-repeat-suffixed copies \* No longer destrings text and audio audit
-fields, which hold file names \* Leaves a blank line between variables
+**cto_form_dofile**
 
-**cto_form_data** \* Reads export timestamps independently of the system
-locale
+- Drops null fields by their exact name as well as their repeat-suffixed
+  names
+- Labels the bare variable alongside its repeat-suffixed copies
+- No longer destrings text and audio audit fields, which hold file names
+- Leaves a blank line between variables
 
-**cto_form_data_attachment** \* Reports download progress
+**cto_form_data**
+
+- Reads export timestamps independently of the system locale
+
+**cto_form_data_attachment**
+
+- Reports download progress
 
 ## ctoclient 0.2.1
 
-**cto_form_docx** \* New function writing the deployed form to a Word
-document for review, with rows colour-coded by field type and a legend
+**cto_form_docx**
 
-**cto_form_dofile** \* Keeps choice values as the form writes them, so
-whole codes no longer gain a decimal
+- New function writing the deployed form to a Word document for review,
+  with rows colour-coded by field type and a legend
+
+**cto_form_dofile**
+
+- Keeps choice values as the form writes them, so whole codes no longer
+  gain a decimal
 
 ## ctoclient 0.2.0
 
