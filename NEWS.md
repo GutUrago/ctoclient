@@ -1,13 +1,30 @@
 # ctoclient 0.2.3
 
+* Removes platform-dependent assertions from the datetime tests, which failed on CRAN's macOS builder although the parser itself was correct
+
+
 # ctoclient 0.2.2
 
-* Some minor bug fixes
+**cto_form_dofile**
+* Drops null fields by their exact name as well as their repeat-suffixed names
+* Labels the bare variable alongside its repeat-suffixed copies
+* No longer destrings text and audio audit fields, which hold file names
+* Leaves a blank line between variables
+
+**cto_form_data**
+* Reads export timestamps independently of the system locale
+
+**cto_form_data_attachment**
+* Reports download progress
+
 
 # ctoclient 0.2.1
 
-* The main added feature is that `cto_form_docx()` function is added to 
-generate a word document version of the deployed form.
+**cto_form_docx**
+* New function writing the deployed form to a Word document for review, with rows colour-coded by field type and a legend
+
+**cto_form_dofile**
+* Keeps choice values as the form writes them, so whole codes no longer gain a decimal
 
 # ctoclient 0.2.0
 
