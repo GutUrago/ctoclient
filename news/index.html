@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ctoclient</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,13 +50,20 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.2" id="ctoclient-022">ctoclient 0.2.2<a class="anchor" aria-label="anchor" href="#ctoclient-022"></a></h2>
-<ul><li>Some minor bug fixes</li>
+<h2 class="pkg-version" data-toc-text="0.2.3" id="ctoclient-023">ctoclient 0.2.3<a class="anchor" aria-label="anchor" href="#ctoclient-023"></a></h2>
+<ul><li>Removes platform-dependent assertions from the datetime tests, which failed on CRAN’s macOS builder although the parser itself was correct</li>
 </ul></div>
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.2" id="ctoclient-022">ctoclient 0.2.2<a class="anchor" aria-label="anchor" href="#ctoclient-022"></a></h2>
+<p><strong>cto_form_dofile</strong> * Drops null fields by their exact name as well as their repeat-suffixed names * Labels the bare variable alongside its repeat-suffixed copies * No longer destrings text and audio audit fields, which hold file names * Leaves a blank line between variables</p>
+<p><strong>cto_form_data</strong> * Reads export timestamps independently of the system locale</p>
+<p><strong>cto_form_data_attachment</strong> * Reports download progress</p>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="ctoclient-021">ctoclient 0.2.1<a class="anchor" aria-label="anchor" href="#ctoclient-021"></a></h2>
-<ul><li>The main added feature is that <code><a href="../reference/cto_form_docx.html">cto_form_docx()</a></code> function is added to generate a word document version of the deployed form.</li>
-</ul></div>
+<p><strong>cto_form_docx</strong> * New function writing the deployed form to a Word document for review, with rows colour-coded by field type and a legend</p>
+<p><strong>cto_form_dofile</strong> * Keeps choice values as the form writes them, so whole codes no longer gain a decimal</p>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="ctoclient-020">ctoclient 0.2.0<a class="anchor" aria-label="anchor" href="#ctoclient-020"></a></h2><p class="text-muted">CRAN release: 2026-09-20</p>
 <p><strong>cto_form_data</strong></p>
